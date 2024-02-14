@@ -13,12 +13,11 @@ pub struct UnstakeCtx<'info>{
     /// CHECK:
     #[account(mut)]  // Ensure mutability for transfer
     pub external_sol_destination: Signer<'info>,  // Added for SOL transfer
+    /// CHECK:
     #[account(
-        mut,
-        constraint = user.key() == user_stake_entry.user
-        @ StakeError::InvalidUser
+        mut
     )]
-    pub user: Signer<'info>,
+    pub user: AccountInfo<'info>,
     #[account(
         mut, 
         seeds = [user.key().as_ref(), STAKE_ENTRY_SEED.as_bytes()],

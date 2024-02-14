@@ -1,0 +1,137 @@
+import { Injectable } from '@nestjs/common';
+import {
+  AnchorProvider,
+  Idl,
+  Program,
+  setProvider,
+  web3,
+} from '@project-serum/anchor';
+import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  SYSVAR_RENT_PUBKEY,
+  SystemProgram,
+} from '@solana/web3.js';
+import { IStake } from 'src/users/interfaces/stake';
+import { confirmTx } from 'utils/confirm-tx';
+import { IDL, SolSaver } from './types/sol_saver';
+
+@Injectable()
+export class SolanaService {
+  private program: Program<SolSaver>;
+  private provider: AnchorProvider;
+  private connection: Connection;
+  private programAuthority: Keypair;
+  constructor() {
+    this.connection = new Connection(process.env.SOLANA_NODE, 'confirmed');
+    this.programAuthority = web3.Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.PROGRAM_AUTHORITY_SEEDS)),
+    );
+    const wallet = new NodeWallet(this.programAuthority);
+
+    this.provider = new AnchorProvider(this.connection, wallet, {});
+    setProvider(this.provider);
+    const programId = new PublicKey(process.env.PROGRAM_PUBKEY as string);
+
+    this.program = new Program(IDL as Idl, programId) as Program<SolSaver>;
+  }
+
+  async createPool(): Promise<string> {
+    const [pool] = PublicKey.findProgramAddressSync(
+      [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
+      this.program.programId,
+    );
+    const programAuthority = web3.Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.PROGRAM_AUTHORITY_SEEDS)),
+    );
+    const vault = web3.Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
+    );
+    const poolPublicKey = pool.toBase58();
+    console.log(programAuthority.publicKey.toBase58());
+    const createdPool = await this.program.account.poolState
+      .fetch(pool)
+      .catch(() => {
+        console.log('pool is not created is safe for us to initialize a pool');
+      });
+
+    if (createdPool) {
+      return poolPublicKey;
+    }
+    try {
+      const poolCreated = await this.program.methods
+        .initPool()
+        .accounts({
+          programAuthority: programAuthority.publicKey,
+          rent: SYSVAR_RENT_PUBKEY,
+          systemProgram: SystemProgram.programId,
+          poolState: pool,
+          externalSolDestination: vault.publicKey,
+        })
+        .signers([programAuthority])
+        .rpc();
+      return poolCreated;
+    } catch (e) {
+      console.log({ e });
+    }
+  }
+  async initStakeEntry({ txHash, pubkey }: { txHash: string; pubkey: string }) {
+    await confirmTx(txHash, this.connection);
+    const userKey = new PublicKey(pubkey);
+    const [userEntry] = PublicKey.findProgramAddressSync(
+      [userKey.toBuffer(), Buffer.from(process.env.STAKE_ENTRY_STATE_SEED)],
+      this.program?.programId,
+    );
+
+    const [pool] = PublicKey.findProgramAddressSync(
+      [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
+      this.program.programId,
+    );
+
+    return { stakeEntry: userEntry, pool };
+  }
+
+  async stake({ pubkey, txHash }: Omit<IStake, 'amount'>) {
+    await confirmTx(txHash, this.connection);
+    const userKey = new PublicKey(pubkey);
+
+    const [pool] = PublicKey.findProgramAddressSync(
+      [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
+      this.program.programId,
+    );
+    const [userEntry] = PublicKey.findProgramAddressSync(
+      [userKey.toBuffer(), Buffer.from(process.env.STAKE_ENTRY_STATE_SEED)],
+      this.program?.programId,
+    );
+    return { pool, stakeEntry: userEntry };
+  }
+
+  async unstake({ pubkey }: { pubkey: string }) {
+    const userKey = new PublicKey(pubkey);
+    const [userEntry] = PublicKey.findProgramAddressSync(
+      [userKey.toBuffer(), Buffer.from(process.env.STAKE_ENTRY_STATE_SEED)],
+      this.program?.programId,
+    );
+    const [pool] = PublicKey.findProgramAddressSync(
+      [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
+      this.program.programId,
+    );
+    const vault = web3.Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
+    );
+    const test = await this.program.methods
+      .unstake()
+      .accounts({
+        pool,
+        systemProgram: SystemProgram.programId,
+        user: userKey,
+        externalSolDestination: vault.publicKey,
+        userStakeEntry: userEntry,
+      })
+      .signers([vault])
+      .rpc();
+    return test;
+  }
+}
