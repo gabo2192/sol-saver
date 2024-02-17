@@ -38,7 +38,7 @@ export class SolanaService {
     this.program = new Program(IDL as Idl, programId) as Program<SolSaver>;
   }
 
-  async createPool(): Promise<string> {
+  async createPool(): Promise<{ pool: string; vault: string }> {
     const [pool] = PublicKey.findProgramAddressSync(
       [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
       this.program.programId,
@@ -58,10 +58,10 @@ export class SolanaService {
       });
 
     if (createdPool) {
-      return poolPublicKey;
+      return { pool: poolPublicKey, vault: vault.publicKey.toBase58() };
     }
     try {
-      const poolCreated = await this.program.methods
+      await this.program.methods
         .initPool()
         .accounts({
           programAuthority: programAuthority.publicKey,
@@ -72,7 +72,7 @@ export class SolanaService {
         })
         .signers([programAuthority])
         .rpc();
-      return poolCreated;
+      return { pool: pool.toBase58(), vault: vault.publicKey.toBase58() };
     } catch (e) {
       console.log({ e });
     }
@@ -89,6 +89,7 @@ export class SolanaService {
       [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
       this.program.programId,
     );
+    console.log({ pool });
 
     return { stakeEntry: userEntry, pool };
   }
@@ -121,6 +122,8 @@ export class SolanaService {
     const vault = web3.Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
     );
+    const wtf = await this.program.account.stakeEntry.fetch(userEntry);
+    console.log({ wtf: wtf.balance.toNumber() });
     const test = await this.program.methods
       .unstake()
       .accounts({

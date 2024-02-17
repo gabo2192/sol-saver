@@ -10,7 +10,7 @@ export default async function stake(req: NextApiRequest, res: NextApiResponse) {
       error: "User wallet not authenticated",
     });
   // get cookies from request
-  await backendClient.post(
+  const data = await backendClient.post(
     "/users/init-stake-entry",
     {
       pubkey: token.sub,
@@ -23,5 +23,5 @@ export default async function stake(req: NextApiRequest, res: NextApiResponse) {
     }
   );
 
-  return res.status(200);
+  return res.status(200).json(data);
 }

@@ -43,7 +43,7 @@ pub fn unstake_handler(ctx: Context<UnstakeCtx>) -> Result<()>{
 
     msg!("Total staked after withdrawal: {}", pool.total_staked_sol);
     msg!("Amount deposited by users: {}", pool.user_deposit_amt);
-    
+    user_entry.balance = 0;
     Ok(())
 }   
 

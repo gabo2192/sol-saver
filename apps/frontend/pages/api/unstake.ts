@@ -24,6 +24,7 @@ export default async function stake(req: NextApiRequest, res: NextApiResponse) {
       }
     );
     console.log({ data });
+    return res.status(200).json(data);
   } catch (e) {
     let error = e as AxiosError;
     console.log({ e: error.response?.data });

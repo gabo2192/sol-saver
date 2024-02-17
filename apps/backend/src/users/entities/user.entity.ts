@@ -19,9 +19,6 @@ export class User {
   @OneToMany(() => UserStake, (userStake) => userStake.user)
   stakeEntries: UserStake[];
 
-  // @OneToMany(() => Transaction, (transaction) => transaction.user)
-  // transactions: Transaction[];
-
   @CreateDateColumn()
   createdAt: Date;
 

@@ -2,26 +2,28 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { UserStake } from './user-stake.entity';
 
 @Entity()
-export class Transaction {
+export class UserTransactions {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // @ManyToOne(() => User, (user) => user.transactions)
-  // user: User;
+  @ManyToOne(() => UserStake, (stake) => stake.transactions)
+  stakeEntry: UserStake;
 
-  // @ManyToOne(() => Pool, (pool) => pool.transactions)
-  // pool: Pool;
-
-  // @ManyToOne(() => UserStake, (stake) => stake.transactions)
-  // stakeEntry: UserStake;
+  @Column({ type: 'bigint' })
+  amount: bigint;
 
   @Column()
-  amount: number;
+  from: string;
+
+  @Column()
+  to: string;
 
   @Column()
   transferedAt: Date;

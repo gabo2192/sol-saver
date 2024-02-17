@@ -4,9 +4,11 @@ import {
   CreateDateColumn,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { UserTransactions } from './transaction.entity';
 import { User } from './user.entity';
 
 @Entity()
@@ -23,8 +25,11 @@ export class UserStake {
   @ManyToOne(() => Pool, (pool) => pool.userStakeEntries)
   pool: Pool;
 
-  // @OneToMany(() => Transaction, (transaction) => transaction.stakeEntry)
-  // transactions: Transaction[];
+  @OneToMany(
+    () => UserTransactions,
+    (userTransactions) => userTransactions.stakeEntry,
+  )
+  transactions: UserTransactions[];
 
   @Column({ type: 'bigint' })
   balance: bigint;

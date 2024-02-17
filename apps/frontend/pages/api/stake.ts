@@ -24,6 +24,5 @@ export default async function stake(req: NextApiRequest, res: NextApiResponse) {
     }
   );
   console.log({ data });
-
-  return res.status(200);
+  return res.status(200).json(data);
 }

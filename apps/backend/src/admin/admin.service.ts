@@ -14,7 +14,7 @@ export class AdminService {
   async create(
     adminPool: Omit<IPool, 'id' | 'tokenVault' | 'poolAddress'>,
   ): Promise<Pool> {
-    const pool = await this.solanaService.createPool();
+    const { pool, vault } = await this.solanaService.createPool();
     const databasePool = await this.adminRepository.findOne({
       where: { poolAddress: pool },
     });
@@ -22,6 +22,7 @@ export class AdminService {
       return this.adminRepository.save({
         ...adminPool,
         poolAddress: pool,
+        tokenVault: vault,
       });
     }
 

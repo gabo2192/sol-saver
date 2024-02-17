@@ -8,6 +8,7 @@ import { UserStake } from 'src/users/entities/user-stake.entity';
 import { User } from 'src/users/entities/user.entity';
 import { IStake } from 'src/users/interfaces/stake';
 import { DeepPartial, Repository } from 'typeorm';
+import { UserTransactions } from './entities/transaction.entity';
 
 @Injectable()
 export class UsersService {
@@ -15,8 +16,9 @@ export class UsersService {
   private userRepository: Repository<User>;
   @InjectRepository(UserStake)
   private userStakeRepository: Repository<UserStake>;
-  // @InjectRepository()
-  // private transactionRepository: Repository<Transaction>;
+  @InjectRepository(UserTransactions)
+  private userTransactionsRepository: Repository<UserTransactions>;
+
   constructor(
     private solanaService: SolanaService,
     private adminService: AdminService,
@@ -41,9 +43,9 @@ export class UsersService {
     );
     console.log({ entry });
     const pooldb = await this.adminService.findPoolByPubkey(pool.toBase58());
-
+    console.log({ pooldb });
     const findUser = await this.getUser(stakeEntry.pubkey);
-
+    console.log({ findUser });
     const dbEntry = this.userStakeRepository.create({
       balance: BigInt(0),
       pool: pooldb.id,
@@ -56,33 +58,48 @@ export class UsersService {
   async stake(stake: IStake) {
     console.log({ stake });
     const { stakeEntry } = await this.solanaService.stake(stake);
-    // const pooldb = await this.adminService.findPoolByPubkey(pool.toBase58());
-
-    // const user = await this.getUser(stake.pubkey);
 
     const dbEntry = await this.userStakeRepository.findOne({
       where: { publicKey: stakeEntry.toBase58() },
+      relations: ['pool'],
     });
+
+    console.log({ dbEntry });
+    await this.userTransactionsRepository.save({
+      amount: BigInt(stake.amount * LAMPORTS_PER_SOL),
+      stakeEntry: dbEntry,
+      transferedAt: new Date(),
+      from: stake.pubkey,
+      to: dbEntry.pool.tokenVault,
+    } as DeepPartial<UserTransactions>);
 
     return this.userStakeRepository.update(dbEntry.id, {
       balance: BigInt(
         Number(dbEntry.balance) + stake.amount * LAMPORTS_PER_SOL,
       ),
     });
-
-    // const transaction = this.transactionRepository.create({
-    //   amount: stake.amount * LAMPORTS_PER_SOL,
-    //   pool: pooldb.id,
-    //   stakeEntry: dbEntry.id,
-    //   user: user.id,
-    //   transferedAt: new Date(),
-    // } as DeepPartial<Transaction>);
-
-    // return this.transactionRepository.save(transaction);
   }
 
   async unstake(unstake: { pubkey: string }) {
     const data = await this.solanaService.unstake(unstake);
+    const user = await this.userRepository.findOne({
+      where: { publicKey: unstake.pubkey },
+    });
+
+    const stake = await this.userStakeRepository.findOne({
+      where: { user: { id: user.id } },
+      relations: ['pool'],
+    });
+    console.log({ stake });
+    await this.userTransactionsRepository.save({
+      amount: stake.balance,
+      stakeEntry: stake,
+      transferedAt: new Date(),
+      to: unstake.pubkey,
+      from: stake.pool.tokenVault,
+    } as DeepPartial<UserTransactions>);
+
+    await this.userStakeRepository.update(stake.id, { balance: BigInt(0) });
     return data;
   }
 }
