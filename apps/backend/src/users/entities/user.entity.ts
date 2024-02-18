@@ -1,7 +1,9 @@
+import { Prize } from 'src/admin/entities/prize.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -18,6 +20,9 @@ export class User {
 
   @OneToMany(() => UserStake, (userStake) => userStake.user)
   stakeEntries: UserStake[];
+
+  @ManyToOne(() => Prize, (prize) => prize.user)
+  prizes: Prize[];
 
   @CreateDateColumn()
   createdAt: Date;

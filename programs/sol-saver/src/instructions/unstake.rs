@@ -1,5 +1,5 @@
 use {
-    crate::{state::*, errors::*}, 
+    crate::state::*, 
     anchor_lang::{prelude::*, system_program::{transfer, Transfer}}, 
 };
 #[derive(Accounts)]

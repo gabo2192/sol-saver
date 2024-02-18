@@ -11,4 +11,9 @@ export class AdminController {
   async create(@Body() createPool: CreatePoolDto): Promise<Pool> {
     return await this.adminService.create(createPool);
   }
+
+  @Post('raffle-reward')
+  async raffleReward(@Body('poolId') poolId: number) {
+    return await this.adminService.raffleReward(poolId);
+  }
 }

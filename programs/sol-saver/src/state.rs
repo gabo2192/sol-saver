@@ -35,27 +35,3 @@ pub struct StakeEntry {
     pub last_staked: i64,
     pub initial_distribution_rate: u64
 }
-
-// pub fn calculate_out_amount(pool_state: &PoolState, user_stake_entry: &StakeEntry) -> u128 {
-//     // using a single distribution rate
-//     // let distribution_rate: u128;
-
-//     // if user_stake_entry.initial_distribution_rate == 1 {
-//     //     distribution_rate = pool_state.distribution_rate;
-//     //     msg!("initial rate == 1");
-//     //     msg!("Distribution rate: {}", distribution_rate);
-//     // } else {
-//     //     distribution_rate = pool_state.distribution_rate.checked_mul(RATE_MULT).unwrap()
-//     //                             .checked_div(user_stake_entry.initial_distribution_rate).unwrap();
-//     //     msg!("Distribution rate: {}", distribution_rate);
-//     // }
-
-//     msg!("User staked amount: {}", user_stake_entry.balance);
-//     let amount: u64 = user_stake_entry.balance;
-    
-
-//     // out_amount = (amount as u128).checked_mul(distribution_rate).unwrap().checked_div(RATE_MULT).unwrap();
-//     // msg!("Amount after rewards/burn: {}", out_amount);
-
-//     amount
-// }

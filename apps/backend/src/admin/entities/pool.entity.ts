@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Prize } from './prize.entity';
 
 @Entity()
 export class Pool {
@@ -34,8 +35,8 @@ export class Pool {
   @OneToMany(() => UserStake, (userStake) => userStake.pool)
   userStakeEntries: UserStake[];
 
-  // @OneToMany(() => Transaction, (transaction) => transaction.pool)
-  // transactions: Transaction[];
+  @OneToMany(() => Prize, (prize) => prize.pool)
+  prizes: Prize[];
 
   @CreateDateColumn()
   createdAt: Date;

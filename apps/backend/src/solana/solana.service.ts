@@ -10,9 +10,12 @@ import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
 import {
   Connection,
   Keypair,
+  LAMPORTS_PER_SOL,
   PublicKey,
   SYSVAR_RENT_PUBKEY,
   SystemProgram,
+  Transaction,
+  sendAndConfirmTransaction,
 } from '@solana/web3.js';
 import { IStake } from 'src/users/interfaces/stake';
 import { confirmTx } from 'utils/confirm-tx';
@@ -94,7 +97,7 @@ export class SolanaService {
     return { stakeEntry: userEntry, pool };
   }
 
-  async stake({ pubkey, txHash }: Omit<IStake, 'amount'>) {
+  async stake({ pubkey, txHash, amount }: IStake) {
     await confirmTx(txHash, this.connection);
     const userKey = new PublicKey(pubkey);
 
@@ -106,6 +109,30 @@ export class SolanaService {
       [userKey.toBuffer(), Buffer.from(process.env.STAKE_ENTRY_STATE_SEED)],
       this.program?.programId,
     );
+
+    const vault = Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
+    );
+
+    const saverNetworkFinance = Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.SAVER_NETWORK_FINANCE)),
+    );
+    console.log({
+      saverNetworkFinance: saverNetworkFinance.publicKey.toBase58(),
+    });
+
+    const sendTokensToFinance = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: vault.publicKey,
+        toPubkey: saverNetworkFinance.publicKey,
+        lamports: amount * LAMPORTS_PER_SOL,
+      }),
+    );
+
+    await sendAndConfirmTransaction(this.connection, sendTokensToFinance, [
+      vault,
+    ]);
+
     return { pool, stakeEntry: userEntry };
   }
 
@@ -136,5 +163,25 @@ export class SolanaService {
       .signers([vault])
       .rpc();
     return test;
+  }
+
+  async calculatePoolReward(pool: string) {
+    const poolPublicKey = new PublicKey(pool);
+    const poolAct = await this.program.account.poolState.fetch(poolPublicKey);
+    const poolReward = poolAct.totalStakedSol.toNumber() * 0.137;
+    const saverNetworkFinance = Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.SAVER_NETWORK_FINANCE)),
+    );
+    await this.connection.requestAirdrop(
+      saverNetworkFinance.publicKey,
+      poolReward,
+    );
+    return poolReward;
+  }
+
+  async getPoolBalance(pool: string) {
+    const poolPublicKey = new PublicKey(pool);
+    const poolAct = await this.program.account.poolState.fetch(poolPublicKey);
+    return poolAct.totalStakedSol.toNumber();
   }
 }

@@ -32,7 +32,7 @@ export class UsersService {
     return this.userRepository.save({ publicKey });
   }
   getUsers() {
-    return this.userRepository.find();
+    return this.userRepository.find({ relations: ['stakeEntries'] });
   }
   async initStakeEntry(stakeEntry: InitStakeEntryDto) {
     const { stakeEntry: entry, pool } = await this.solanaService.initStakeEntry(
@@ -56,7 +56,6 @@ export class UsersService {
     return this.userStakeRepository.save(dbEntry);
   }
   async stake(stake: IStake) {
-    console.log({ stake });
     const { stakeEntry } = await this.solanaService.stake(stake);
 
     const dbEntry = await this.userStakeRepository.findOne({
@@ -64,7 +63,6 @@ export class UsersService {
       relations: ['pool'],
     });
 
-    console.log({ dbEntry });
     await this.userTransactionsRepository.save({
       amount: BigInt(stake.amount * LAMPORTS_PER_SOL),
       stakeEntry: dbEntry,
@@ -90,7 +88,7 @@ export class UsersService {
       where: { user: { id: user.id } },
       relations: ['pool'],
     });
-    console.log({ stake });
+
     await this.userTransactionsRepository.save({
       amount: stake.balance,
       stakeEntry: stake,
