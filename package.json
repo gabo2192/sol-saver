@@ -1,7 +1,8 @@
 {
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "ui:add": "pnpm --filter @repo/ui ui:add"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.29.0",

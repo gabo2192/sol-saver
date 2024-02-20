@@ -1,7 +1,7 @@
-import backendClient from "@/lib/backend-client";
 import { AxiosError } from "axios";
 import { NextApiRequest, NextApiResponse } from "next";
 import { getToken } from "next-auth/jwt";
+import backendClient from "../../lib/backend-client";
 const secret = process.env.NEXTAUTH_SECRET!;
 
 export default async function stake(req: NextApiRequest, res: NextApiResponse) {

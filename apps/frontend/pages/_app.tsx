@@ -1,4 +1,4 @@
-import { SolSaverProvider } from "@/context/sol-saver-program";
+import "@repo/ui/globals.css";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import {
   ConnectionProvider,
@@ -9,7 +9,9 @@ import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { SessionProvider } from "next-auth/react";
 import type { AppProps } from "next/app";
 import { useMemo } from "react";
-import "./globals.css";
+import { AppProvider } from "../context/app";
+import { SolSaverProvider } from "../context/sol-saver-program";
+import { UserProvider } from "../context/user";
 
 require("@solana/wallet-adapter-react-ui/styles.css");
 
@@ -27,7 +29,11 @@ export default function App({ Component, pageProps }: AppProps) {
         <WalletModalProvider>
           <SessionProvider session={pageProps.session} refetchInterval={0}>
             <SolSaverProvider>
-              <Component {...pageProps} />
+              <AppProvider>
+                <UserProvider>
+                  <Component {...pageProps} />
+                </UserProvider>
+              </AppProvider>
             </SolSaverProvider>
           </SessionProvider>
         </WalletModalProvider>

@@ -1,7 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
+import { Pool } from '../pool/entities/pool.entity';
 import { AdminService } from './admin.service';
 import { CreatePoolDto } from './dtos/create-pool';
-import { Pool } from './entities/pool.entity';
 
 @Controller('admin')
 export class AdminController {

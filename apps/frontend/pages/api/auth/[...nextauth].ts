@@ -1,8 +1,8 @@
-import backendClient from "@/lib/backend-client";
 import { NextApiRequest, NextApiResponse } from "next";
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { getCsrfToken } from "next-auth/react";
+import backendClient from "../../../lib/backend-client";
 
 export default async function auth(req: NextApiRequest, res: NextApiResponse) {
   const providers = [

@@ -5,6 +5,7 @@ import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { SolanaModule } from './solana/solana.module';
+import { PoolModule } from './pool/pool.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { SolanaModule } from './solana/solana.module';
     AuthModule,
     UsersModule,
     SolanaModule,
+    PoolModule,
   ],
 })
 export class AppModule {}

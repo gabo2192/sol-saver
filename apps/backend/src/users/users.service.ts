@@ -100,4 +100,11 @@ export class UsersService {
     await this.userStakeRepository.update(stake.id, { balance: BigInt(0) });
     return data;
   }
+
+  async getUserByPublicKey(pubkey: string) {
+    return this.userRepository.findOne({
+      where: { publicKey: pubkey },
+      relations: ['stakeEntries', 'stakeEntries.pool'],
+    });
+  }
 }

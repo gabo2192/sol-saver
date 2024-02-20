@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Pool } from 'src/admin/entities/pool.entity';
+import { Pool } from 'src/pool/entities/pool.entity';
 import { SolanaService } from 'src/solana/solana.service';
 import { User } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
+import { IPool } from '../pool/interfaces/pool';
 import { Prize } from './entities/prize.entity';
-import { IPool } from './interfaces/pool';
 
 @Injectable()
 export class AdminService {

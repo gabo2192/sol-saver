@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Pool } from './pool.entity';
+import { Pool } from '../../pool/entities/pool.entity';
 
 @Entity()
 export class Prize {

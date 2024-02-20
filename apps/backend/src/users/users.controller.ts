@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -36,5 +38,11 @@ export class UsersController {
   @Post('unstake')
   async unstake(@Body() unstake: UnstakeDto) {
     return this.userService.unstake(unstake);
+  }
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Get(':id')
+  async getUserByPublicKey(@Param() { id }: { id: string }) {
+    return this.userService.getUserByPublicKey(id);
   }
 }

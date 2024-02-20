@@ -1,13 +1,12 @@
-import { SigninMessage } from "@/utils/sign-in-message";
-import { Bars3Icon } from "@heroicons/react/24/outline";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import bs58 from "bs58";
-import { getCsrfToken, signIn, useSession } from "next-auth/react";
+import { Bars3Icon, MoonIcon, SunIcon } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useAppContext } from "../../context/app";
+import { useLogin } from "../../hooks/useLogin";
 import MobileNavigation from "./mobile-navigation";
+import ProfileDropdown from "./profile-dropdown";
 
 const navigation = [
   { name: "Stake", href: "/" },
@@ -20,41 +19,10 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: session, status } = useSession();
   const loading = status === "loading";
-  const wallet = useWallet();
-  const walletModal = useWalletModal();
-
-  const handleSignIn = async () => {
-    try {
-      if (!wallet.connected) {
-        walletModal.setVisible(true);
-      }
-
-      const csrf = await getCsrfToken();
-      if (!wallet.publicKey || !csrf || !wallet.signMessage) return;
-
-      const message = new SigninMessage({
-        domain: window.location.host,
-        publicKey: wallet.publicKey?.toBase58(),
-        statement: `Sign this message to sign in to the app.`,
-        nonce: csrf,
-      });
-      console.log(message);
-      const data = new TextEncoder().encode(message.prepare());
-      const signature = await wallet.signMessage(data);
-      const serializedSignature = bs58.encode(signature);
-
-      signIn("credentials", {
-        message: JSON.stringify(message),
-        redirect: false,
-        signature: serializedSignature,
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
+  const { handleSignIn } = useLogin();
+  const { isDarkMode, setIsDarkMode } = useAppContext();
   return (
-    <header className="bg-black">
+    <header className="bg-background">
       <nav
         className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8"
         aria-label="Global"
@@ -65,14 +33,14 @@ export default function Header() {
               <span className="sr-only">Sol Saver</span>
               <Image
                 className="h-8 w-auto"
-                src="/logo.jpg"
+                src="/logo.png"
                 alt="sol-saver"
                 width={400}
                 height={400}
               />
             </Link>
             <Link href="/">
-              <h1 className="font-bold uppercase">Sol Saver</h1>
+              <h1 className="font-bold uppercase text-foreground">Sol Saver</h1>
             </Link>
           </div>
           <div className="hidden lg:flex lg:gap-x-12">
@@ -80,17 +48,31 @@ export default function Header() {
               <Link
                 key={item.name}
                 href={item.href}
-                className="text-sm font-semibold leading-6 text-white"
+                className="text-sm font-semibold leading-6 text-foreground"
               >
                 {item.name}
               </Link>
             ))}
           </div>
         </div>
+        <div className="ml-auto mr-4">
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-md py-2.5 text-primary"
+            onClick={() => setIsDarkMode((prev) => !prev)}
+          >
+            <span className="sr-only">Toggle dark mode</span>
+            {isDarkMode ? (
+              <SunIcon className="h-6 w-6" aria-hidden="true" />
+            ) : (
+              <MoonIcon className="h-6 w-6" aria-hidden="true" />
+            )}
+          </button>
+        </div>
         <div className="flex lg:hidden">
           <button
             type="button"
-            className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-200"
+            className="inline-flex items-center justify-center rounded-md py-2.5 text-primary"
             onClick={() => setMobileMenuOpen(true)}
           >
             <span className="sr-only">Open main menu</span>
@@ -101,11 +83,12 @@ export default function Header() {
           {!session && (
             <button
               onClick={handleSignIn}
-              className="text-sm font-semibold leading-6 text-white"
+              className="text-sm font-semibold leading-6 text-foreground"
             >
               Log in <span aria-hidden="true">&rarr;</span>
             </button>
           )}
+          {session && <ProfileDropdown />}
         </div>
       </nav>
       <MobileNavigation

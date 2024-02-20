@@ -1,7 +1,8 @@
-import { createContext, useContext, useState } from "react";
-import { SolSaver } from "../../backend/src/solana/types/sol_saver";
+import { createContext, useContext, useEffect, useState } from "react";
+import { IDL, SolSaver } from "../../backend/src/solana/types/sol_saver";
 
 import * as anchor from "@project-serum/anchor";
+import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 
 interface SolSaverContext {
   program: anchor.Program<SolSaver> | null;
@@ -15,30 +16,30 @@ const SolSaverContext = createContext<SolSaverContext>({
 // Create a provider component
 const SolSaverProvider = ({ children }: { children: React.ReactNode }) => {
   const [program, setProgram] = useState<anchor.Program<SolSaver> | null>(null);
-  // const { connection } = useConnection();
-  // const wallet = useAnchorWallet();
+  const { connection } = useConnection();
+  const wallet = useAnchorWallet();
 
-  // useEffect(() => {
-  //   if (connection && wallet) {
-  //     const anchorConnection = new anchor.web3.Connection(
-  //       "http://localhost:8899",
-  //       {
-  //         commitment: "confirmed",
-  //       }
-  //     );
-  //     const anchorProvider = new anchor.AnchorProvider(
-  //       anchorConnection,
-  //       wallet,
-  //       { preflightCommitment: "confirmed" }
-  //     );
-  //     const _program = new anchor.Program<SolSaver>(
-  //       JSON.parse(JSON.stringify(IDL)),
-  //       process.env.NEXT_PUBLIC_PROGRAM_PUBKEY as string,
-  //       anchorProvider
-  //     );
-  //     setProgram(_program);
-  //   }
-  // }, [wallet, connection]);
+  useEffect(() => {
+    if (connection && wallet) {
+      const anchorConnection = new anchor.web3.Connection(
+        "http://localhost:8899",
+        {
+          commitment: "confirmed",
+        }
+      );
+      const anchorProvider = new anchor.AnchorProvider(
+        anchorConnection,
+        wallet,
+        { preflightCommitment: "confirmed" }
+      );
+      const _program = new anchor.Program<SolSaver>(
+        JSON.parse(JSON.stringify(IDL)),
+        process.env.NEXT_PUBLIC_PROGRAM_PUBKEY as string,
+        anchorProvider
+      );
+      setProgram(_program);
+    }
+  }, [wallet, connection]);
 
   // Provide the context value to the children components
   return (

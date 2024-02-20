@@ -1,4 +1,4 @@
-import { Pool } from 'src/admin/entities/pool.entity';
+import { Pool } from 'src/pool/entities/pool.entity';
 import {
   Column,
   CreateDateColumn,
