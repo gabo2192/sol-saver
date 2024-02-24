@@ -8,5 +8,6 @@ import { PoolService } from './pool.service';
   controllers: [PoolController],
   providers: [PoolService],
   imports: [TypeOrmModule.forFeature([Pool])],
+  exports: [PoolService],
 })
 export class PoolModule {}

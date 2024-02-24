@@ -13,7 +13,7 @@ export class AdminController {
   }
 
   @Post('raffle-reward')
-  async raffleReward(@Body('poolId') poolId: number) {
-    return await this.adminService.raffleReward(poolId);
+  async raffleReward(@Body() { poolId, apy }: { poolId: number; apy: number }) {
+    return await this.adminService.raffleReward(poolId, apy);
   }
 }

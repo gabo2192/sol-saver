@@ -1,5 +1,5 @@
 use {
-    crate::state::*, 
+    crate::{state::*, errors::*}, 
     anchor_lang::{prelude::*, system_program::{transfer, Transfer}}, 
 };
 #[derive(Accounts)]
@@ -29,11 +29,15 @@ pub struct UnstakeCtx<'info>{
 
 pub fn unstake_handler(ctx: Context<UnstakeCtx>) -> Result<()>{
     let out_amount = ctx.accounts.user_stake_entry.balance;
+    let fee_amount = 2000;
+    if out_amount < fee_amount {
+        return Err(StakeError::InsufficientFunds.into());
+    }
     msg!("Out amount returned: {}", out_amount);
     msg!("Total staked before withdrawal: {}", ctx.accounts.pool.total_staked_sol);
+    let transfer_amount = out_amount - fee_amount;
 
-
-    transfer(ctx.accounts.transfer_ctx(), out_amount)?;
+    transfer(ctx.accounts.transfer_ctx(), transfer_amount)?;
 
     let pool = &mut ctx.accounts.pool;
     let user_entry = &mut ctx.accounts.user_stake_entry;

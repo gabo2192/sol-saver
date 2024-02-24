@@ -19,6 +19,16 @@ export interface Pool {
 
 export interface User {
   id: string;
-  publickey: string;
+  publicKey: string;
   stakeEntries: StakeEntry[];
+}
+
+export interface Prize {
+  id: number;
+  amount: string;
+  isClaimed: boolean;
+  createdAt: string;
+  updteadAt: string;
+  user: User;
+  pool: Pool;
 }

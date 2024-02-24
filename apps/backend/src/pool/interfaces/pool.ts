@@ -7,3 +7,12 @@ export interface IPool {
   tokenVault: string;
   tokenAddress?: string;
 }
+
+export interface ICreatePool {
+  tokenName: string;
+  tokenLogoUri: string;
+  tokenSymbol: string;
+  tokenAddress?: string;
+  tokenVault: string;
+  poolAddress: string;
+}

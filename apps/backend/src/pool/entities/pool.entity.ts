@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Prize } from '../../admin/entities/prize.entity';
+import { Prize } from '../../prize/entities/prize.entity';
 
 @Entity()
 export class Pool {
@@ -35,7 +35,7 @@ export class Pool {
   @Column({ type: 'bigint', default: BigInt(0) })
   supply: bigint;
 
-  @Column({ default: 0 })
+  @Column({ default: 0, type: 'float' })
   supplyApy: number;
 
   @OneToMany(() => UserStake, (userStake) => userStake.pool)

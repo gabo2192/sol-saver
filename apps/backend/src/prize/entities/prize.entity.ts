@@ -3,7 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  OneToMany,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -14,10 +14,10 @@ export class Prize {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @OneToMany(() => Pool, (pool) => pool.prizes)
+  @ManyToOne(() => Pool, (pool) => pool.prizes)
   pool: Pool;
 
-  @OneToMany(() => User, (user) => user.prizes)
+  @ManyToOne(() => User, (user) => user.prizes)
   user: User;
 
   @Column({ type: 'bigint' })

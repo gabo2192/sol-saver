@@ -1,27 +1,23 @@
-import { Prize } from 'src/prize/entities/prize.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
-  OneToMany,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { UserStake } from './user-stake.entity';
 
 @Entity()
-export class User {
+export class HistoryUserStake {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  publicKey: string;
+  @ManyToOne(() => UserStake, (userStake) => userStake.histories)
+  stakeEntry: UserStake;
 
-  @OneToMany(() => UserStake, (userStake) => userStake.user)
-  stakeEntries: UserStake[];
-
-  @OneToMany(() => Prize, (prize) => prize.user)
-  prizes: Prize[];
+  @Column({ type: 'bigint' })
+  balance: bigint;
 
   @CreateDateColumn()
   createdAt: Date;

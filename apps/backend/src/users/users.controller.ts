@@ -19,11 +19,10 @@ export class UsersController {
   constructor(private userService: UsersService) {}
 
   @UseGuards(AuthGuard)
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   @Post('init-stake-entry')
   async create(@Body() stakeEntry: InitStakeEntryDto) {
-    await this.userService.initStakeEntry(stakeEntry);
-    return;
+    return this.userService.initStakeEntry(stakeEntry);
   }
 
   @UseGuards(AuthGuard)
@@ -44,5 +43,14 @@ export class UsersController {
   @Get(':id')
   async getUserByPublicKey(@Param() { id }: { id: string }) {
     return this.userService.getUserByPublicKey(id);
+  }
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('claim-prize')
+  async claimPrize(
+    @Body() { pubkey, prizeId }: { pubkey: string; prizeId: number },
+  ) {
+    console.log({ pubkey, prizeId });
+    return this.userService.claimPrize(pubkey, prizeId);
   }
 }

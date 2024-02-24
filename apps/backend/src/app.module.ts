@@ -3,9 +3,10 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { SolanaModule } from './solana/solana.module';
 import { PoolModule } from './pool/pool.module';
+import { SolanaModule } from './solana/solana.module';
+import { UsersModule } from './users/users.module';
+import { PrizeModule } from './prize/prize.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { PoolModule } from './pool/pool.module';
     UsersModule,
     SolanaModule,
     PoolModule,
+    PrizeModule,
   ],
 })
 export class AppModule {}

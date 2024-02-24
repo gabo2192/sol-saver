@@ -1,75 +1,59 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Pool } from 'src/pool/entities/pool.entity';
+import { PoolService } from 'src/pool/pool.service';
+import { PrizeService } from 'src/prize/prize.service';
 import { SolanaService } from 'src/solana/solana.service';
-import { User } from 'src/users/entities/user.entity';
-import { Repository } from 'typeorm';
+import { UsersService } from 'src/users/users.service';
 import { IPool } from '../pool/interfaces/pool';
-import { Prize } from './entities/prize.entity';
 
 @Injectable()
 export class AdminService {
-  @InjectRepository(Pool)
-  private adminRepository: Repository<Pool>;
-  @InjectRepository(Prize)
-  private prizeRepository: Repository<Prize>;
-  @InjectRepository(User)
-  private userRepository: Repository<User>;
-  constructor(private solanaService: SolanaService) {}
+  constructor(
+    private solanaService: SolanaService,
+    private poolService: PoolService,
+    private userService: UsersService,
+    private prizeService: PrizeService,
+  ) {}
 
   async create(
     adminPool: Omit<IPool, 'id' | 'tokenVault' | 'poolAddress'>,
-  ): Promise<Pool> {
+  ): Promise<any> {
     const { pool, vault } = await this.solanaService.createPool();
-    const databasePool = await this.adminRepository.findOne({
-      where: { poolAddress: pool },
+    return this.poolService.createOrFindPool({
+      poolAddress: pool,
+      tokenLogoUri: adminPool.tokenLogoUri,
+      tokenName: adminPool.tokenName,
+      tokenSymbol: adminPool.tokenSymbol,
+      tokenVault: vault,
+      tokenAddress: adminPool.tokenAddress,
     });
-    if (!databasePool) {
-      return this.adminRepository.save({
-        ...adminPool,
-        poolAddress: pool,
-        tokenVault: vault,
-      });
-    }
-
-    return databasePool;
   }
-  async findPoolById(id: number) {
-    return this.adminRepository.findOne({ where: { id } });
-  }
-
-  async findPoolByPubkey(pubkey: string) {
-    return this.adminRepository.findOne({ where: { poolAddress: pubkey } });
-  }
-
-  async raffleReward(poolId: number) {
-    const pool = await this.adminRepository.findOne({ where: { id: poolId } });
+  async raffleReward(poolId: number, apy: number) {
+    const pool = await this.poolService.findPoolById(poolId);
     const calculatePoolReward = await this.solanaService.calculatePoolReward(
       pool.poolAddress,
+      apy,
     );
-    const users = await this.userRepository.find({
-      relations: ['stakeEntries'],
-    });
+    const users = await this.userService.getUsers();
     const poolBalance = await this.solanaService.getPoolBalance(
       pool.poolAddress,
     );
+    const randomNumber = Math.random() * poolBalance;
+
     const totalStakedByUsers = users.map((user) => ({
       id: user.id,
       balance:
         user.stakeEntries.find((i) => i.pool.id === poolId)?.balance ||
         BigInt(0),
     }));
-
-    const winner = await this.getWinner(totalStakedByUsers, poolBalance);
-    const prize = this.prizeRepository.create({
-      amount: BigInt(calculatePoolReward),
-      pool,
-      user: {
-        id: winner,
-      },
+    const winner = await this.getWinner(totalStakedByUsers, randomNumber);
+    await this.poolService.updateApy(poolId, apy);
+    console.log({ calculatePoolReward });
+    await this.prizeService.create({
+      amount: BigInt(Math.floor(calculatePoolReward * 0.6)),
+      poolId: pool.id,
+      winner,
     });
-
-    return await this.prizeRepository.save(prize);
+    return true;
   }
   private async getWinner(
     users: {

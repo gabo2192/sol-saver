@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { HistoryUserStake } from './history-user-stake.entity';
 import { UserTransactions } from './transaction.entity';
 import { User } from './user.entity';
 
@@ -16,7 +17,7 @@ export class UserStake {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ unique: true })
   publicKey: string;
 
   @ManyToOne(() => User, (user) => user.stakeEntries)
@@ -30,6 +31,9 @@ export class UserStake {
     (userTransactions) => userTransactions.stakeEntry,
   )
   transactions: UserTransactions[];
+
+  @OneToMany(() => HistoryUserStake, (history) => history.stakeEntry)
+  histories: UserTransactions[];
 
   @Column({ type: 'bigint' })
   balance: bigint;

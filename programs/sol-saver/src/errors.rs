@@ -7,5 +7,7 @@ pub enum StakeError {
     #[msg("Token mint is invalid")]
     InvalidMint,
     #[msg("Invalid user provided")]
-    InvalidUser
+    InvalidUser,
+    #[msg("Insufficient funds") ]
+    InsufficientFunds
 }

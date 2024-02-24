@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AdminModule } from 'src/admin/admin.module';
+import { PoolModule } from 'src/pool/pool.module';
+import { PrizeModule } from 'src/prize/prize.module';
 import { SolanaModule } from 'src/solana/solana.module';
+import { HistoryUserStake } from './entities/history-user-stake.entity';
 import { UserTransactions } from './entities/transaction.entity';
 import { UserStake } from './entities/user-stake.entity';
 import { User } from './entities/user.entity';
@@ -11,9 +13,15 @@ import { UsersService } from './users.service';
 
 @Module({
   imports: [
-    AdminModule,
+    PoolModule,
     SolanaModule,
-    TypeOrmModule.forFeature([User, UserStake, UserTransactions]),
+    PrizeModule,
+    TypeOrmModule.forFeature([
+      User,
+      UserStake,
+      UserTransactions,
+      HistoryUserStake,
+    ]),
     JwtModule.register({
       global: true,
       secret: process.env.NEXTAUTH_SECRET,

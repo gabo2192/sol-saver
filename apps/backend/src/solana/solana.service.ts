@@ -92,7 +92,11 @@ export class SolanaService {
       [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
       this.program.programId,
     );
-    console.log({ pool });
+    const userStakeEntry =
+      await this.program.account.stakeEntry.fetch(userEntry);
+    if (!userStakeEntry) {
+      throw new Error('User stake entry not found');
+    }
 
     return { stakeEntry: userEntry, pool };
   }
@@ -113,6 +117,9 @@ export class SolanaService {
     const vault = Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
     );
+    const vaultBalance = await this.connection.getBalance(vault.publicKey);
+
+    console.log({ vaultBalance });
 
     const saverNetworkFinance = Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.SAVER_NETWORK_FINANCE)),
@@ -120,8 +127,11 @@ export class SolanaService {
     console.log({
       saverNetworkFinance: saverNetworkFinance.publicKey.toBase58(),
     });
-
-    const sendTokensToFinance = new Transaction().add(
+    const recentBlockhash = await this.connection.getLatestBlockhash();
+    const previewTransfer = new Transaction({
+      feePayer: vault.publicKey,
+      recentBlockhash: recentBlockhash.blockhash,
+    }).add(
       SystemProgram.transfer({
         fromPubkey: vault.publicKey,
         toPubkey: saverNetworkFinance.publicKey,
@@ -129,11 +139,25 @@ export class SolanaService {
       }),
     );
 
+    const estimatedGas = await previewTransfer.getEstimatedFee(this.connection);
+    console.log({ estimatedGas });
+    console.log({
+      saverNetworkFinance: saverNetworkFinance.publicKey.toBase58(),
+    });
+    const sendTokensToFinance = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: vault.publicKey,
+        toPubkey: saverNetworkFinance.publicKey,
+        lamports: amount * LAMPORTS_PER_SOL,
+      }),
+    );
+    const poolAct = await this.program.account.poolState.fetch(pool);
+
     await sendAndConfirmTransaction(this.connection, sendTokensToFinance, [
       vault,
     ]);
 
-    return { pool, stakeEntry: userEntry };
+    return { pool, stakeEntry: userEntry, poolBalance: poolAct.totalStakedSol };
   }
 
   async unstake({ pubkey }: { pubkey: string }) {
@@ -149,9 +173,22 @@ export class SolanaService {
     const vault = web3.Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
     );
-    const wtf = await this.program.account.stakeEntry.fetch(userEntry);
-    console.log({ wtf: wtf.balance.toNumber() });
-    const test = await this.program.methods
+    const userEntryAccount =
+      await this.program.account.stakeEntry.fetch(userEntry);
+    const saverNetworkFinance = Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.SAVER_NETWORK_FINANCE)),
+    );
+    const sendTokensToFinance = new Transaction().add(
+      SystemProgram.transfer({
+        toPubkey: vault.publicKey,
+        fromPubkey: saverNetworkFinance.publicKey,
+        lamports: Number(userEntryAccount.balance),
+      }),
+    );
+    await sendAndConfirmTransaction(this.connection, sendTokensToFinance, [
+      saverNetworkFinance,
+    ]);
+    const withdraw = await this.program.methods
       .unstake()
       .accounts({
         pool,
@@ -162,13 +199,17 @@ export class SolanaService {
       })
       .signers([vault])
       .rpc();
-    return test;
+
+    const poolAct = await this.program.account.poolState.fetch(pool);
+    return { withdraw, poolBalance: poolAct.totalStakedSol };
   }
 
-  async calculatePoolReward(pool: string) {
+  async calculatePoolReward(pool: string, apy: number) {
     const poolPublicKey = new PublicKey(pool);
     const poolAct = await this.program.account.poolState.fetch(poolPublicKey);
-    const poolReward = poolAct.totalStakedSol.toNumber() * 0.137;
+    const poolReward = Math.floor(
+      poolAct.totalStakedSol.toNumber() * (apy / 365),
+    );
     const saverNetworkFinance = Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.SAVER_NETWORK_FINANCE)),
     );
@@ -183,5 +224,35 @@ export class SolanaService {
     const poolPublicKey = new PublicKey(pool);
     const poolAct = await this.program.account.poolState.fetch(poolPublicKey);
     return poolAct.totalStakedSol.toNumber();
+  }
+
+  async claimPrize({ pubkey, amount }: { pubkey: string; amount: number }) {
+    const vault = web3.Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
+    );
+    const saverNetworkFinance = Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.SAVER_NETWORK_FINANCE)),
+    );
+    const userKey = new PublicKey(pubkey);
+    const sendPrizeToPool = new Transaction().add(
+      SystemProgram.transfer({
+        toPubkey: vault.publicKey,
+        fromPubkey: saverNetworkFinance.publicKey,
+        lamports: Number(amount),
+      }),
+    );
+    await sendAndConfirmTransaction(this.connection, sendPrizeToPool, [
+      saverNetworkFinance,
+    ]);
+
+    const sendPrizeToUser = new Transaction().add(
+      SystemProgram.transfer({
+        toPubkey: userKey,
+        fromPubkey: vault.publicKey,
+        lamports: Number(amount),
+      }),
+    );
+    await sendAndConfirmTransaction(this.connection, sendPrizeToUser, [vault]);
+    return true;
   }
 }

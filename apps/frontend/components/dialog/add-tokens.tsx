@@ -32,6 +32,8 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
   const { connection } = useConnection();
   const { data: session } = useSession();
   const [balance, setBalance] = useState<number>(0);
+  const [amount, setAmount] = useState<number>(0);
+
   useEffect(() => {
     if (session) {
       const userKey = new PublicKey(session.user.pubkey as string);
@@ -46,7 +48,6 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
     style: "currency",
     currency: "USD",
   }).format(stake?.balance!);
-  const [amount, setAmount] = useState<number>(0);
 
   console.log({ pool });
 
@@ -55,10 +56,11 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
     const poolPubkey = new PublicKey(pool.poolAddress);
     const vault = new PublicKey(pool.tokenVault);
     const userKey = new PublicKey(session?.user?.pubkey as string);
+
     const userEntry = new PublicKey(stake?.publicKey as string);
 
     const txHash = await program?.methods
-      .stake(new BN(Number(stake) * LAMPORTS_PER_SOL))
+      .stake(new BN(Number(amount) * LAMPORTS_PER_SOL))
       .accounts({
         pool: poolPubkey,
         systemProgram: SystemProgram.programId,
@@ -72,7 +74,7 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
       "/api/stake",
       {
         txHash,
-        amount: stake,
+        amount: amount,
       },
       { withCredentials: true }
     );
