@@ -38,7 +38,6 @@ pub fn stake_handler(ctx: Context<StakeCtx>, stake_amount: u64) -> Result<()> {
     msg!("Pool initial total: {}", ctx.accounts.pool.total_staked_sol);
     msg!("Initial user deposits: {}", ctx.accounts.pool.user_deposit_amt);
     msg!("User entry initial balance: {}", ctx.accounts.user_stake_entry.balance);
-    ctx.accounts.user_stake_entry.initial_distribution_rate = ctx.accounts.pool.reward_per_sol;
 
     // update pool state amount
     let pool = &mut ctx.accounts.pool;

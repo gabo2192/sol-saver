@@ -3,4 +3,6 @@ export class CreatePoolDto {
   tokenLogoUri: string;
   tokenSymbol: string;
   tokenAddress?: string;
+  tokenProgram?: string;
+  tokenMint?: string;
 }

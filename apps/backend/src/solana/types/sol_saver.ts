@@ -30,6 +30,18 @@ export type SolSaver = {
           isMut: false;
           isSigner: false;
         },
+        {
+          name: 'tokenProgram';
+          isMut: false;
+          isSigner: false;
+          isOptional: true;
+        },
+        {
+          name: 'tokenMint';
+          isMut: false;
+          isSigner: false;
+          isOptional: true;
+        },
       ];
       args: [];
     },
@@ -146,10 +158,6 @@ export type SolSaver = {
             type: 'i64';
           },
           {
-            name: 'rewardPerSol';
-            type: 'u64';
-          },
-          {
             name: 'lastRewardTimestamp';
             type: 'i64';
           },
@@ -163,6 +171,14 @@ export type SolSaver = {
           },
           {
             name: 'authority';
+            type: 'publicKey';
+          },
+          {
+            name: 'tokenMint';
+            type: 'publicKey';
+          },
+          {
+            name: 'tokenProgram';
             type: 'publicKey';
           },
         ];
@@ -213,6 +229,11 @@ export type SolSaver = {
       name: 'InvalidUser';
       msg: 'Invalid user provided';
     },
+    {
+      code: 6003;
+      name: 'InsufficientFunds';
+      msg: 'Insufficient funds';
+    },
   ];
 };
 
@@ -247,6 +268,18 @@ export const IDL: SolSaver = {
           name: 'rent',
           isMut: false,
           isSigner: false,
+        },
+        {
+          name: 'tokenProgram',
+          isMut: false,
+          isSigner: false,
+          isOptional: true,
+        },
+        {
+          name: 'tokenMint',
+          isMut: false,
+          isSigner: false,
+          isOptional: true,
         },
       ],
       args: [],
@@ -364,10 +397,6 @@ export const IDL: SolSaver = {
             type: 'i64',
           },
           {
-            name: 'rewardPerSol',
-            type: 'u64',
-          },
-          {
             name: 'lastRewardTimestamp',
             type: 'i64',
           },
@@ -381,6 +410,14 @@ export const IDL: SolSaver = {
           },
           {
             name: 'authority',
+            type: 'publicKey',
+          },
+          {
+            name: 'tokenMint',
+            type: 'publicKey',
+          },
+          {
+            name: 'tokenProgram',
             type: 'publicKey',
           },
         ],
@@ -430,6 +467,11 @@ export const IDL: SolSaver = {
       code: 6002,
       name: 'InvalidUser',
       msg: 'Invalid user provided',
+    },
+    {
+      code: 6003,
+      name: 'InsufficientFunds',
+      msg: 'Insufficient funds',
     },
   ],
 };

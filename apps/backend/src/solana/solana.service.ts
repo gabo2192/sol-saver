@@ -42,18 +42,22 @@ export class SolanaService {
   }
 
   async createPool(): Promise<{ pool: string; vault: string }> {
-    const [pool] = PublicKey.findProgramAddressSync(
-      [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
-      this.program.programId,
-    );
     const programAuthority = web3.Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.PROGRAM_AUTHORITY_SEEDS)),
     );
     const vault = web3.Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
     );
+    const [pool] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from(process.env.STAKE_POOL_STATE_SEED),
+        vault.publicKey.toBuffer(),
+      ],
+      this.program.programId,
+    );
+
     const poolPublicKey = pool.toBase58();
-    console.log(programAuthority.publicKey.toBase58());
+
     const createdPool = await this.program.account.poolState
       .fetch(pool)
       .catch(() => {
@@ -72,6 +76,8 @@ export class SolanaService {
           systemProgram: SystemProgram.programId,
           poolState: pool,
           externalSolDestination: vault.publicKey,
+          tokenMint: null,
+          tokenProgram: null,
         })
         .signers([programAuthority])
         .rpc();

@@ -29,6 +29,18 @@
           "name": "rent",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
         }
       ],
       "args": []
@@ -146,10 +158,6 @@
             "type": "i64"
           },
           {
-            "name": "rewardPerSol",
-            "type": "u64"
-          },
-          {
             "name": "lastRewardTimestamp",
             "type": "i64"
           },
@@ -163,6 +171,14 @@
           },
           {
             "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "tokenMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "tokenProgram",
             "type": "publicKey"
           }
         ]
@@ -212,6 +228,11 @@
       "code": 6002,
       "name": "InvalidUser",
       "msg": "Invalid user provided"
+    },
+    {
+      "code": 6003,
+      "name": "InsufficientFunds",
+      "msg": "Insufficient funds"
     }
   ],
   "metadata": {
