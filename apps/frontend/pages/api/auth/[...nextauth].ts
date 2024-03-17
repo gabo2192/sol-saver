@@ -21,20 +21,20 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
       async authorize(credentials, req) {
         try {
           const csrfToken = await getCsrfToken({ req: { ...req, body: null } });
-
-          const { data: publicKey } = await backendClient.post<{
-            id: string;
+         
+          const { data } = await backendClient.post<{  
+            token: string
           } | null>("/auth/sign-in", {
             message: credentials?.message,
             signature: credentials?.signature,
             csrfToken,
           });
-
-          if (!publicKey) {
+          
+          if (!data) {
             return null;
           }
           return {
-            id: publicKey.id,
+            id: data.token
           };
         } catch (e) {
           return null;
