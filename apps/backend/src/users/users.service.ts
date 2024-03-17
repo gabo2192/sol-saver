@@ -41,7 +41,7 @@ export class UsersService {
       relations: ['stakeEntries', 'stakeEntries.pool'],
     });
   }
-  async initStakeEntry(stakeEntry: InitStakeEntryDto) {
+  async initStakeEntry(stakeEntry: InitStakeEntryDto & { pubkey: string }) {
     const { stakeEntry: entry, pool } = await this.solanaService.initStakeEntry(
       {
         txHash: stakeEntry.txHash,
@@ -107,10 +107,10 @@ export class UsersService {
     });
   }
 
-  async unstake(unstake: { pubkey: string }) {
-    const { poolBalance } = await this.solanaService.unstake(unstake);
+  async unstake({ pubkey }: { pubkey: string }) {
+    const { poolBalance } = await this.solanaService.unstake({ pubkey });
     const user = await this.userRepository.findOne({
-      where: { publicKey: unstake.pubkey },
+      where: { publicKey: pubkey },
     });
 
     const stake = await this.userStakeRepository.findOne({
@@ -122,7 +122,7 @@ export class UsersService {
       amount: stake.balance,
       stakeEntry: stake,
       transferedAt: new Date(),
-      to: unstake.pubkey,
+      to: pubkey,
       from: stake.pool.tokenVault,
     } as DeepPartial<UserTransactions>);
     await this.poolService.updatePoolBalance(stake.pool.id, -stake.balance);
