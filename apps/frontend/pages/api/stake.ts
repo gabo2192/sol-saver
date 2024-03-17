@@ -13,13 +13,12 @@ export default async function stake(req: NextApiRequest, res: NextApiResponse) {
   const { data } = await backendClient.post(
     "/users/stake",
     {
-      pubkey: token.sub,
       txHash: req.body.txHash,
       amount: Number(req.body.amount),
     },
     {
       headers: {
-        Authorization: `Bearer ${process.env.AUTH_BACKEND_TOKEN}`,
+        Authorization: `Bearer ${token.sub}`,
       },
     }
   );

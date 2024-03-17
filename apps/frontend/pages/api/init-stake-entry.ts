@@ -15,12 +15,11 @@ export default async function stake(req: NextApiRequest, res: NextApiResponse) {
     await backendClient.post(
       "/users/init-stake-entry",
       {
-        pubkey: token.sub,
         txHash: req.body.txHash,
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.AUTH_BACKEND_TOKEN}`,
+          Authorization: `Bearer ${token.sub}`,
         },
       }
     );

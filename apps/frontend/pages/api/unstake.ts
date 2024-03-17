@@ -15,11 +15,8 @@ export default async function stake(req: NextApiRequest, res: NextApiResponse) {
     const { data } = await backendClient.post(
       "/users/unstake",
       {
-        pubkey: token.sub,
-      },
-      {
         headers: {
-          Authorization: `Bearer ${process.env.AUTH_BACKEND_TOKEN}`,
+          Authorization: `Bearer ${token.sub}`,
         },
       }
     );

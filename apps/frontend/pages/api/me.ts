@@ -10,9 +10,9 @@ export default async function stake(req: NextApiRequest, res: NextApiResponse) {
       error: "User wallet not authenticated",
     });
   // get cookies from request
-  const { data } = await backendClient.get("/users/" + token.sub, {
+  const { data } = await backendClient.get("/users/me", {
     headers: {
-      Authorization: `Bearer ${process.env.AUTH_BACKEND_TOKEN}`,
+      Authorization: `Bearer ${token.sub}`,
     },
   });
   return res.status(200).json(data);
