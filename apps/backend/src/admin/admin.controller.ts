@@ -8,8 +8,13 @@ export class AdminController {
   constructor(private adminService: AdminService) {}
 
   @Post('create-pool')
-  async create(@Body() createPool: CreatePoolDto): Promise<Pool> {
-    return await this.adminService.create(createPool);
+  async createPool(@Body() createPool: CreatePoolDto): Promise<Pool> {
+    return await this.adminService.createPool(createPool);
+  }
+
+  @Post('create-mint')
+  async createMint(): Promise<string> {
+    return await this.adminService.createTokenMint();
   }
 
   @Post('raffle-reward')

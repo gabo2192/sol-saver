@@ -17,8 +17,6 @@ export class AuthGuard implements CanActivate {
     if (!token || token !== process.env.AUTH_KEY) {
       throw new UnauthorizedException();
     }
-    console.log(process.env.NEXTAUTH_SECRET);
-
     return true;
   }
 

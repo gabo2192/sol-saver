@@ -17,6 +17,7 @@ export default async function stake(req: NextApiRequest, res: NextApiResponse) {
       {
         pubkey: token.sub,
         txHash: req.body.txHash,
+        poolAddress: req.body.poolAddress,
       },
       {
         headers: {

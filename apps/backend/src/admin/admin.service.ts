@@ -14,17 +14,23 @@ export class AdminService {
     private prizeService: PrizeService,
   ) {}
 
-  async create(
+  async createTokenMint() {
+    return this.solanaService.createTokenMint();
+  }
+
+  async createPool(
     adminPool: Omit<IPool, 'id' | 'tokenVault' | 'poolAddress'>,
   ): Promise<any> {
-    const { pool, vault } = await this.solanaService.createPool();
+    const { pool, vault } = await this.solanaService.createPool({
+      tokenMint: adminPool.tokenMint,
+    });
     return this.poolService.createOrFindPool({
       poolAddress: pool,
       tokenLogoUri: adminPool.tokenLogoUri,
       tokenName: adminPool.tokenName,
       tokenSymbol: adminPool.tokenSymbol,
       tokenVault: vault,
-      tokenAddress: adminPool.tokenAddress,
+      tokenMint: adminPool.tokenMint,
     });
   }
   async raffleReward(poolId: number, apy: number) {

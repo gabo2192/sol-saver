@@ -16,7 +16,7 @@ export class PoolService {
     tokenLogoUri,
     tokenName,
     tokenSymbol,
-    tokenAddress,
+    tokenMint,
     poolAddress,
     tokenVault,
   }: ICreatePool) {
@@ -28,7 +28,7 @@ export class PoolService {
         tokenLogoUri,
         tokenName,
         tokenSymbol,
-        tokenAddress,
+        tokenMint,
         supplyApy: 0.05,
       });
     }

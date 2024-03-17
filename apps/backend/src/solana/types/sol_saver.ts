@@ -11,7 +11,7 @@ export type SolSaver = {
           isSigner: false;
         },
         {
-          name: 'externalSolDestination';
+          name: 'externalVaultDestination';
           isMut: true;
           isSigner: false;
         },
@@ -30,23 +30,83 @@ export type SolSaver = {
           isMut: false;
           isSigner: false;
         },
+      ];
+      args: [];
+    },
+    {
+      name: 'initPoolToken';
+      accounts: [
+        {
+          name: 'poolState';
+          isMut: true;
+          isSigner: false;
+        },
+        {
+          name: 'tokenVault';
+          isMut: true;
+          isSigner: false;
+        },
+        {
+          name: 'tokenMint';
+          isMut: true;
+          isSigner: false;
+        },
+        {
+          name: 'programAuthority';
+          isMut: true;
+          isSigner: true;
+        },
+        {
+          name: 'vaultAuthority';
+          isMut: false;
+          isSigner: false;
+        },
         {
           name: 'tokenProgram';
           isMut: false;
           isSigner: false;
-          isOptional: true;
         },
         {
-          name: 'tokenMint';
+          name: 'systemProgram';
           isMut: false;
           isSigner: false;
-          isOptional: true;
+        },
+        {
+          name: 'rent';
+          isMut: false;
+          isSigner: false;
         },
       ];
       args: [];
     },
     {
       name: 'initStakeEntry';
+      accounts: [
+        {
+          name: 'user';
+          isMut: true;
+          isSigner: true;
+        },
+        {
+          name: 'userStakeEntry';
+          isMut: true;
+          isSigner: false;
+        },
+        {
+          name: 'poolState';
+          isMut: false;
+          isSigner: false;
+        },
+        {
+          name: 'systemProgram';
+          isMut: false;
+          isSigner: false;
+        },
+      ];
+      args: [];
+    },
+    {
+      name: 'initTokenStakeEntry';
       accounts: [
         {
           name: 'user';
@@ -166,11 +226,35 @@ export type SolSaver = {
             type: 'u64';
           },
           {
-            name: 'externalSolDestination';
+            name: 'externalVaultDestination';
             type: 'publicKey';
           },
           {
             name: 'authority';
+            type: 'publicKey';
+          },
+        ];
+      };
+    },
+    {
+      name: 'tokenPoolState';
+      type: {
+        kind: 'struct';
+        fields: [
+          {
+            name: 'authority';
+            type: 'publicKey';
+          },
+          {
+            name: 'bump';
+            type: 'u8';
+          },
+          {
+            name: 'amount';
+            type: 'u64';
+          },
+          {
+            name: 'tokenVault';
             type: 'publicKey';
           },
           {
@@ -178,8 +262,28 @@ export type SolSaver = {
             type: 'publicKey';
           },
           {
-            name: 'tokenProgram';
+            name: 'initializedAt';
+            type: 'i64';
+          },
+          {
+            name: 'vaultBump';
+            type: 'u8';
+          },
+          {
+            name: 'vaultAuthBump';
+            type: 'u8';
+          },
+          {
+            name: 'vaultAuthority';
             type: 'publicKey';
+          },
+          {
+            name: 'distributionRate';
+            type: 'u128';
+          },
+          {
+            name: 'userDepositAmt';
+            type: 'u64';
           },
         ];
       };
@@ -250,7 +354,7 @@ export const IDL: SolSaver = {
           isSigner: false,
         },
         {
-          name: 'externalSolDestination',
+          name: 'externalVaultDestination',
           isMut: true,
           isSigner: false,
         },
@@ -269,23 +373,83 @@ export const IDL: SolSaver = {
           isMut: false,
           isSigner: false,
         },
+      ],
+      args: [],
+    },
+    {
+      name: 'initPoolToken',
+      accounts: [
+        {
+          name: 'poolState',
+          isMut: true,
+          isSigner: false,
+        },
+        {
+          name: 'tokenVault',
+          isMut: true,
+          isSigner: false,
+        },
+        {
+          name: 'tokenMint',
+          isMut: true,
+          isSigner: false,
+        },
+        {
+          name: 'programAuthority',
+          isMut: true,
+          isSigner: true,
+        },
+        {
+          name: 'vaultAuthority',
+          isMut: false,
+          isSigner: false,
+        },
         {
           name: 'tokenProgram',
           isMut: false,
           isSigner: false,
-          isOptional: true,
         },
         {
-          name: 'tokenMint',
+          name: 'systemProgram',
           isMut: false,
           isSigner: false,
-          isOptional: true,
+        },
+        {
+          name: 'rent',
+          isMut: false,
+          isSigner: false,
         },
       ],
       args: [],
     },
     {
       name: 'initStakeEntry',
+      accounts: [
+        {
+          name: 'user',
+          isMut: true,
+          isSigner: true,
+        },
+        {
+          name: 'userStakeEntry',
+          isMut: true,
+          isSigner: false,
+        },
+        {
+          name: 'poolState',
+          isMut: false,
+          isSigner: false,
+        },
+        {
+          name: 'systemProgram',
+          isMut: false,
+          isSigner: false,
+        },
+      ],
+      args: [],
+    },
+    {
+      name: 'initTokenStakeEntry',
       accounts: [
         {
           name: 'user',
@@ -405,11 +569,35 @@ export const IDL: SolSaver = {
             type: 'u64',
           },
           {
-            name: 'externalSolDestination',
+            name: 'externalVaultDestination',
             type: 'publicKey',
           },
           {
             name: 'authority',
+            type: 'publicKey',
+          },
+        ],
+      },
+    },
+    {
+      name: 'tokenPoolState',
+      type: {
+        kind: 'struct',
+        fields: [
+          {
+            name: 'authority',
+            type: 'publicKey',
+          },
+          {
+            name: 'bump',
+            type: 'u8',
+          },
+          {
+            name: 'amount',
+            type: 'u64',
+          },
+          {
+            name: 'tokenVault',
             type: 'publicKey',
           },
           {
@@ -417,8 +605,28 @@ export const IDL: SolSaver = {
             type: 'publicKey',
           },
           {
-            name: 'tokenProgram',
+            name: 'initializedAt',
+            type: 'i64',
+          },
+          {
+            name: 'vaultBump',
+            type: 'u8',
+          },
+          {
+            name: 'vaultAuthBump',
+            type: 'u8',
+          },
+          {
+            name: 'vaultAuthority',
             type: 'publicKey',
+          },
+          {
+            name: 'distributionRate',
+            type: 'u128',
+          },
+          {
+            name: 'userDepositAmt',
+            type: 'u64',
           },
         ],
       },

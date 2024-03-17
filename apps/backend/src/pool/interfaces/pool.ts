@@ -5,14 +5,14 @@ export interface IPool {
   tokenSymbol: string;
   poolAddress: string;
   tokenVault: string;
-  tokenAddress?: string;
+  tokenMint?: string;
 }
 
 export interface ICreatePool {
   tokenName: string;
   tokenLogoUri: string;
   tokenSymbol: string;
-  tokenAddress?: string;
+  tokenMint?: string;
   tokenVault: string;
   poolAddress: string;
 }

@@ -30,7 +30,7 @@ export class Pool {
   tokenVault: string;
 
   @Column({ nullable: true })
-  tokenAddress: string;
+  tokenMint: string;
 
   @Column({ type: 'bigint', default: BigInt(0) })
   supply: bigint;

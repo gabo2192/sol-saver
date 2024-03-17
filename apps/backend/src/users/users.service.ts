@@ -42,14 +42,19 @@ export class UsersService {
     });
   }
   async initStakeEntry(stakeEntry: InitStakeEntryDto) {
-    const { stakeEntry: entry, pool } = await this.solanaService.initStakeEntry(
-      {
-        txHash: stakeEntry.txHash,
-        pubkey: stakeEntry.pubkey,
-      },
+    const pooldb = await this.poolService.findPoolByPubkey(
+      stakeEntry.poolAddress,
     );
 
-    const pooldb = await this.poolService.findPoolByPubkey(pool.toBase58());
+    if (!pooldb) {
+      throw new Error('Pool not found');
+    }
+
+    const { stakeEntry: entry } = await this.solanaService.initStakeEntry({
+      txHash: stakeEntry.txHash,
+      pubkey: stakeEntry.pubkey,
+      tokenMint: pooldb.tokenMint,
+    });
 
     const findUser = await this.getUser(stakeEntry.pubkey);
 

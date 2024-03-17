@@ -7,6 +7,7 @@ import {
   web3,
 } from '@project-serum/anchor';
 import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
+import { TOKEN_PROGRAM_ID, createMint } from '@solana/spl-token';
 import {
   Connection,
   Keypair,
@@ -41,69 +42,162 @@ export class SolanaService {
     this.program = new Program(IDL as Idl, programId) as Program<SolSaver>;
   }
 
-  async createPool(): Promise<{ pool: string; vault: string }> {
+  async createTokenMint() {
+    const token = await createMint(
+      this.connection,
+      this.programAuthority,
+      this.programAuthority.publicKey,
+      this.programAuthority.publicKey,
+      6,
+    );
+    return token.toBase58();
+  }
+
+  async createPool({
+    tokenMint,
+  }: {
+    tokenMint?: string;
+  }): Promise<{ pool: string; vault: string }> {
     const programAuthority = web3.Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.PROGRAM_AUTHORITY_SEEDS)),
     );
-    const vault = web3.Keypair.fromSecretKey(
-      new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
-    );
+
+    if (!tokenMint) {
+      const vault = web3.Keypair.fromSecretKey(
+        new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
+      );
+      const [pool] = PublicKey.findProgramAddressSync(
+        [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
+        this.program.programId,
+      );
+
+      const poolPublicKey = pool.toBase58();
+
+      const createdPool = await this.program.account.poolState
+        .fetch(pool)
+        .catch(() => {
+          console.log(
+            'pool is not created is safe for us to initialize a pool',
+          );
+        });
+
+      if (createdPool) {
+        return { pool: poolPublicKey, vault: vault.publicKey.toBase58() };
+      }
+      try {
+        await this.program.methods
+          .initPool()
+          .accounts({
+            programAuthority: programAuthority.publicKey,
+            rent: SYSVAR_RENT_PUBKEY,
+            systemProgram: SystemProgram.programId,
+            poolState: pool,
+            externalVaultDestination: vault.publicKey,
+          })
+          .signers([programAuthority])
+          .rpc();
+        return { pool: pool.toBase58(), vault: vault.publicKey.toBase58() };
+      } catch (e) {
+        console.log({ e });
+        throw new Error('Error creating pool');
+      }
+    }
+
+    const mint = new PublicKey(tokenMint);
     const [pool] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from(process.env.STAKE_POOL_STATE_SEED),
-        vault.publicKey.toBuffer(),
-      ],
+      [mint.toBuffer(), Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
       this.program.programId,
     );
-
+    const [vaultAuthority] = await PublicKey.findProgramAddress(
+      [Buffer.from('vault_authority')],
+      this.program.programId,
+    );
     const poolPublicKey = pool.toBase58();
-
-    const createdPool = await this.program.account.poolState
+    const createdPool = await this.program.account.tokenPoolState
       .fetch(pool)
       .catch(() => {
         console.log('pool is not created is safe for us to initialize a pool');
       });
 
+    const [stakeVault] = await PublicKey.findProgramAddressSync(
+      [mint.toBuffer(), vaultAuthority.toBuffer(), Buffer.from('vault')],
+      this.program.programId,
+    );
+
     if (createdPool) {
-      return { pool: poolPublicKey, vault: vault.publicKey.toBase58() };
+      return { pool: poolPublicKey, vault: stakeVault.toBase58() };
     }
     try {
       await this.program.methods
-        .initPool()
+        .initPoolToken()
         .accounts({
           programAuthority: programAuthority.publicKey,
           rent: SYSVAR_RENT_PUBKEY,
           systemProgram: SystemProgram.programId,
           poolState: pool,
-          externalSolDestination: vault.publicKey,
-          tokenMint: null,
-          tokenProgram: null,
+          tokenMint: mint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          tokenVault: stakeVault,
+          vaultAuthority,
         })
         .signers([programAuthority])
         .rpc();
-      return { pool: pool.toBase58(), vault: vault.publicKey.toBase58() };
+      return { pool: pool.toBase58(), vault: stakeVault.toBase58() };
     } catch (e) {
       console.log({ e });
+      throw new Error('Error creating pool');
     }
   }
-  async initStakeEntry({ txHash, pubkey }: { txHash: string; pubkey: string }) {
+  async initStakeEntry({
+    txHash,
+    pubkey,
+    tokenMint,
+  }: {
+    txHash: string;
+    pubkey: string;
+    tokenMint?: string;
+  }) {
     await confirmTx(txHash, this.connection);
     const userKey = new PublicKey(pubkey);
+
+    if (!tokenMint) {
+      const [userEntry] = PublicKey.findProgramAddressSync(
+        [userKey.toBuffer(), Buffer.from(process.env.STAKE_ENTRY_STATE_SEED)],
+        this.program?.programId,
+      );
+
+      const [pool] = PublicKey.findProgramAddressSync(
+        [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
+        this.program.programId,
+      );
+      const userStakeEntry =
+        await this.program.account.stakeEntry.fetch(userEntry);
+      if (!userStakeEntry) {
+        throw new Error('User stake entry not found');
+      }
+
+      return { stakeEntry: userEntry, pool };
+    }
+    const mint = new PublicKey(tokenMint);
     const [userEntry] = PublicKey.findProgramAddressSync(
-      [userKey.toBuffer(), Buffer.from(process.env.STAKE_ENTRY_STATE_SEED)],
+      [
+        userKey.toBuffer(),
+        mint.toBuffer(),
+        Buffer.from(process.env.STAKE_ENTRY_STATE_SEED),
+      ],
       this.program?.programId,
     );
 
     const [pool] = PublicKey.findProgramAddressSync(
-      [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
+      [mint.toBuffer(), Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
       this.program.programId,
     );
+
     const userStakeEntry =
       await this.program.account.stakeEntry.fetch(userEntry);
     if (!userStakeEntry) {
       throw new Error('User stake entry not found');
     }
-
     return { stakeEntry: userEntry, pool };
   }
 

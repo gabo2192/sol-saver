@@ -15,6 +15,7 @@ export interface Pool {
   supplyApy: number;
   poolAddress: string;
   tokenVault: string;
+  tokenMint: string;
 }
 
 export interface User {

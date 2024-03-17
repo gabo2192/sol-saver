@@ -48,24 +48,45 @@ export default function Page({ pools, solanaPrice }: Props) {
     type: "withdraw" | "stake";
   } | null>(null);
 
-  const handleInitEntry = async ({ poolAddress }: { poolAddress: string }) => {
+  const handleInitEntry = async ({
+    poolAddress,
+    tokenMint,
+  }: {
+    poolAddress: string;
+    tokenMint?: string;
+  }) => {
     const poolPK = new PublicKey(poolAddress);
 
-    const userEntry = await fetch(`/api/user-entry`).then((res) => res.json());
+    const { data: userEntry } = await axios.get(`/api/user-entry`, {
+      params: tokenMint ? { tokenMint } : {},
+    });
 
     try {
-      const txHash = await program?.methods
-        .initStakeEntry()
-        .accounts({
-          poolState: poolPK,
-          userStakeEntry: userEntry,
-          user: session?.user.pubkey,
-        })
-        .rpc();
+      let txHash: string | undefined;
+      if (!tokenMint) {
+        txHash = await program?.methods
+          .initStakeEntry()
+          .accounts({
+            poolState: poolPK,
+            userStakeEntry: userEntry,
+            user: session?.user.pubkey,
+          })
+          .rpc();
+      } else {
+        txHash = await program?.methods
+          .initTokenStakeEntry()
+          .accounts({
+            user: session?.user.pubkey,
+            userStakeEntry: userEntry,
+            poolState: poolPK,
+          })
+          .rpc();
+      }
       await axios.post(
         "/api/init-stake-entry",
         {
           txHash,
+          poolAddress,
         },
         { withCredentials: true }
       );
@@ -92,6 +113,7 @@ export default function Page({ pools, solanaPrice }: Props) {
       // handle init entry
       await handleInitEntry({
         poolAddress: pool.poolAddress as string,
+        tokenMint: pool.tokenMint,
       });
     }
   };
@@ -105,7 +127,7 @@ export default function Page({ pools, solanaPrice }: Props) {
         Stake your tokens to win prizes
       </p>
 
-      <div className="flex flex-col mt-10">
+      <div className="flex flex-col mt-10 ">
         {pools.map((pool) => {
           const userStake = user?.stakeEntries.find(
             (stake) => stake.pool.id === pool.id
@@ -118,14 +140,14 @@ export default function Page({ pools, solanaPrice }: Props) {
 
           return (
             <>
-              <div key={pool.id} className="">
+              <div key={pool.id} className="border-b pb-8 mt-10">
                 {/* Title */}
                 <div className="flex flex-row mb-4">
                   <div className="flex flex-row gap-2 items-center">
                     <img
                       src={pool.tokenLogoUri}
                       alt={pool.tokenName}
-                      className="rounded-full"
+                      className="rounded-full size-10"
                     />
                     <h3 className="text-2xl text-foreground font-medium uppercase">
                       {pool.tokenSymbol}
@@ -243,7 +265,7 @@ export const getStaticProps: GetStaticProps = async (context) => {
   // const { data: solanaPrice } = await axios.get(
   //   "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd"
   // );
-
+  console.log({ pools });
   return {
     props: { pools, solanaPrice: 108 },
     revalidate: 60,
