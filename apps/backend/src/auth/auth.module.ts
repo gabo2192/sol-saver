@@ -4,13 +4,15 @@ import { UsersModule } from 'src/users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './auth.guard';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     UsersModule,
     JwtModule.register({
       global: true,
-      secret: 'ENTER_A_SECRET_KEY',
+      secret: process.env.NEXTAUTH_SECRET as string,
     }),
   ],
   controllers: [AuthController],
