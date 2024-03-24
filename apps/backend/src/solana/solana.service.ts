@@ -7,7 +7,13 @@ import {
   web3,
 } from '@project-serum/anchor';
 import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
-import { TOKEN_PROGRAM_ID, createMint } from '@solana/spl-token';
+import {
+  TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  createMint,
+  createTransferInstruction,
+  getAssociatedTokenAddress,
+} from '@solana/spl-token';
 import {
   Connection,
   Keypair,
@@ -28,14 +34,15 @@ export class SolanaService {
   private provider: AnchorProvider;
   private connection: Connection;
   private programAuthority: Keypair;
+  private wallet: NodeWallet;
   constructor() {
     this.connection = new Connection(process.env.SOLANA_NODE, 'confirmed');
     this.programAuthority = web3.Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.PROGRAM_AUTHORITY_SEEDS)),
     );
-    const wallet = new NodeWallet(this.programAuthority);
+    this.wallet = new NodeWallet(this.programAuthority);
 
-    this.provider = new AnchorProvider(this.connection, wallet, {});
+    this.provider = new AnchorProvider(this.connection, this.wallet, {});
     setProvider(this.provider);
     const programId = new PublicKey(process.env.PROGRAM_PUBKEY as string);
 
@@ -278,6 +285,7 @@ export class SolanaService {
     const saverNetworkFinance = Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.SAVER_NETWORK_FINANCE)),
     );
+    console.log(saverNetworkFinance.publicKey.toBase58());
     const sendTokensToFinance = new Transaction().add(
       SystemProgram.transfer({
         toPubkey: vault.publicKey,
@@ -354,5 +362,61 @@ export class SolanaService {
     );
     await sendAndConfirmTransaction(this.connection, sendPrizeToUser, [vault]);
     return true;
+  }
+
+  async airdrop({ mint, pubkey }: { pubkey: string; mint: string }) {
+    const destinationAccount = new PublicKey(pubkey);
+    const mintKey = new PublicKey(mint);
+
+    const associatedTokenAccount = await getAssociatedTokenAddress(
+      mintKey,
+      destinationAccount,
+    );
+    const source = await getAssociatedTokenAddress(
+      mintKey,
+      this.programAuthority.publicKey,
+    );
+    const accountInfo = await this.connection.getAccountInfo(
+      associatedTokenAccount,
+    );
+    console.log({ accountInfo });
+    const blockhash = (await this.connection.getLatestBlockhash('finalized'))
+      .blockhash;
+    console.log({ accountInfo });
+    if (accountInfo === null) {
+      const tx = new Transaction().add(
+        createAssociatedTokenAccountInstruction(
+          destinationAccount,
+          associatedTokenAccount,
+          this.programAuthority.publicKey,
+          mintKey,
+        ),
+      );
+      tx.feePayer = destinationAccount;
+      tx.recentBlockhash = blockhash;
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      await signedTx.partialSign(this.programAuthority);
+      const serializedTx = signedTx.serialize({ requireAllSignatures: false });
+      return serializedTx.toString('base64');
+    }
+    const tx = new Transaction().add(
+      createTransferInstruction(
+        source,
+        associatedTokenAccount,
+        this.programAuthority.publicKey,
+        1 * LAMPORTS_PER_SOL,
+        [this.programAuthority],
+      ),
+    );
+    const test = await this.connection.sendTransaction(tx, [
+      this.programAuthority,
+    ]);
+    console.log({ test });
+    return 'ok';
+    // tx.feePayer = destinationAccount;
+    // tx.recentBlockhash = blockhash;
+    // tx.sign(this.programAuthority);
+    // console.log(tx.signatures);
+    // return tx.serialize({ requireAllSignatures: false }).toString('base64');
   }
 }

@@ -5,7 +5,16 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "paths": {
+      "@components/*": ["./components/*"],
+      "@hooks/*": ["./hooks/*"],
+      "@lib/*": ["./lib/*"],
+      "@context/*": ["./context/*"],
+      "@types": ["./types"],
+      "@utils/*": ["./utils/*"],
+      "@ui/*": ["../../packages/ui/src/*"]
+    }
   },
 
   "include": [

@@ -27,7 +27,7 @@ export default function RemoveTokensDialog({ isOpen, onClose, pool }: Props) {
 
   const handleUnstake = async () => {
     try {
-      await axios.post("/api/unstake", { withCredentials: true });
+      await axios.post("/api/user/unstake", { withCredentials: true });
     } catch (error) {
       console.error(error);
     }

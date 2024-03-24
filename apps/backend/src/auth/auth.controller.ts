@@ -8,6 +8,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('sign-in')
   async signIn(@Body() { message, signature, csrfToken }: SignInDto) {
+    console.log({ message, signature, csrfToken });
     return this.authService.signIn({ message, signature, csrfToken });
   }
 }

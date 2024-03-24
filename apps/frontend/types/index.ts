@@ -16,6 +16,7 @@ export interface Pool {
   poolAddress: string;
   tokenVault: string;
   tokenMint: string;
+  createdAt: string;
 }
 
 export interface User {

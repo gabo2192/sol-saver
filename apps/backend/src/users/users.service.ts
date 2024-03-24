@@ -41,7 +41,7 @@ export class UsersService {
       relations: ['stakeEntries', 'stakeEntries.pool'],
     });
   }
-  async initStakeEntry(stakeEntry: InitStakeEntryDto) {
+  async initStakeEntry(stakeEntry: InitStakeEntryDto & { pubkey: string }) {
     const pooldb = await this.poolService.findPoolByPubkey(
       stakeEntry.poolAddress,
     );
@@ -163,5 +163,9 @@ export class UsersService {
     });
     await this.prizeService.claimPrize(prizeId);
     return true;
+  }
+
+  async airdrop(pubkey: string, mint: string) {
+    return this.solanaService.airdrop({ pubkey, mint });
   }
 }

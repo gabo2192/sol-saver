@@ -1,16 +1,19 @@
 import { Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { UsersService } from 'src/users/users.service';
 import { SigninMessage } from '../../utils/sign-in-message';
 import { SignInDto } from './dtos/signin';
 
 @Injectable()
 export class AuthService {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async signIn({ message, signature, csrfToken }: SignInDto) {
-    console.log({ message, signature, csrfToken });
     const signinMessage = new SigninMessage(JSON.parse(message || '{}'));
-    console.log({ signinMessage });
+
     const nextAuthUrl = new URL(process.env.NEXTAUTH_URL as string);
     if (signinMessage.domain !== nextAuthUrl.host) {
       return null;
@@ -25,6 +28,8 @@ export class AuthService {
     if (!user) {
       await this.usersService.createUser(signinMessage.publicKey);
     }
-    return { id: signinMessage.publicKey };
+    const payload = { id: signinMessage.publicKey };
+    const token = await this.jwtService.signAsync(payload);
+    return { token };
   }
 }

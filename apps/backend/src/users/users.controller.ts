@@ -4,14 +4,14 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { AuthRequest } from 'src/auth/interfaces/AuthRequest.interface';
 import { InitStakeEntryDto } from './dtos/init-stake-entry.dto';
 import { StakeDto } from './dtos/stake.dto';
-import { UnstakeDto } from './dtos/unstake.dto';
 import { UsersService } from './users.service';
 
 @Controller('users')
@@ -21,36 +21,52 @@ export class UsersController {
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('init-stake-entry')
-  async create(@Body() stakeEntry: InitStakeEntryDto) {
-    return this.userService.initStakeEntry(stakeEntry);
+  async create(
+    @Req() request: AuthRequest,
+    @Body() stakeEntry: InitStakeEntryDto,
+  ) {
+    return this.userService.initStakeEntry({
+      ...stakeEntry,
+      pubkey: request.pubkey,
+    });
   }
 
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('stake')
-  async stake(@Body() stake: StakeDto) {
-    return this.userService.stake(stake);
+  async stake(@Req() { pubkey }: AuthRequest, @Body() stake: StakeDto) {
+    return this.userService.stake({ ...stake, pubkey });
   }
 
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('unstake')
-  async unstake(@Body() unstake: UnstakeDto) {
-    return this.userService.unstake(unstake);
+  async unstake(@Req() { pubkey }: AuthRequest) {
+    return this.userService.unstake({ pubkey });
   }
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
-  @Get(':id')
-  async getUserByPublicKey(@Param() { id }: { id: string }) {
-    return this.userService.getUserByPublicKey(id);
+  @Get('')
+  async getUserByPublicKey(@Req() { pubkey }: AuthRequest) {
+    return this.userService.getUserByPublicKey(pubkey);
   }
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('claim-prize')
   async claimPrize(
-    @Body() { pubkey, prizeId }: { pubkey: string; prizeId: number },
+    @Req() { pubkey }: AuthRequest,
+    @Body() { prizeId }: { prizeId: number },
   ) {
-    console.log({ pubkey, prizeId });
     return this.userService.claimPrize(pubkey, prizeId);
+  }
+
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('airdrop')
+  async airdrop(
+    @Req() { pubkey }: AuthRequest,
+    @Body() { mint }: { mint: string },
+  ) {
+    return this.userService.airdrop(pubkey, mint);
   }
 }

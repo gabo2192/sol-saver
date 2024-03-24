@@ -14,7 +14,6 @@ const AppContext = createContext<AppContext>({
 // Create a provider component
 const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-
   // Provide the context value to the children components
   return (
     <>

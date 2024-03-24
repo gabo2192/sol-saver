@@ -1,4 +1,5 @@
-import "@repo/ui/globals.css";
+"use client";
+
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import {
   ConnectionProvider,
@@ -7,15 +8,18 @@ import {
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { SessionProvider } from "next-auth/react";
-import type { AppProps } from "next/app";
 import { useMemo } from "react";
-import { AppProvider } from "../context/app";
-import { SolSaverProvider } from "../context/sol-saver-program";
-import { UserProvider } from "../context/user";
+import { AppProvider } from "../../context/app";
+import { SolSaverProvider } from "../../context/sol-saver-program";
+import { UserProvider } from "../../context/user";
 
 require("@solana/wallet-adapter-react-ui/styles.css");
 
-export default function App({ Component, pageProps }: AppProps) {
+interface Props {
+  children: React.ReactNode;
+}
+
+export default function App({ children }: Props) {
   const network = process.env.NEXT_PUBLIC_APP_NETWORK as WalletAdapterNetwork;
   // const endpoint = useMemo(() => clusterApiUrl(network), [network]);
 
@@ -27,12 +31,10 @@ export default function App({ Component, pageProps }: AppProps) {
     >
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
-          <SessionProvider session={pageProps.session} refetchInterval={0}>
+          <SessionProvider>
             <SolSaverProvider>
               <AppProvider>
-                <UserProvider>
-                  <Component {...pageProps} />
-                </UserProvider>
+                <UserProvider>{children}</UserProvider>
               </AppProvider>
             </SolSaverProvider>
           </SessionProvider>

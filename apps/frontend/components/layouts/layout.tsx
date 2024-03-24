@@ -1,8 +1,9 @@
+"use client";
 import clsx from "clsx";
 import Head from "next/head";
 import { useEffect } from "react";
-import { useAppContext } from "../context/app";
-import { Header } from "./header";
+import { useAppContext } from "../../context/app";
+import { Header } from "../header";
 
 interface Props {
   children: React.ReactNode;
@@ -10,7 +11,6 @@ interface Props {
 
 export default function Layout({ children }: Props) {
   const { isDarkMode } = useAppContext();
-  console.log({ isDarkMode });
   useEffect(() => {
     if (typeof window !== "undefined") {
       if (isDarkMode) {

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
+import axios from "axios";
 import { useSession } from "next-auth/react";
 import { User } from "../types";
 
@@ -18,13 +19,19 @@ const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: session } = useSession();
 
   useEffect(() => {
+    const getUser = async () => {
+      try {
+        const { data: user } = await axios.get<User>("/api/user/me");
+
+        setUser(user);
+      } catch (err) {
+        setUser(null);
+      }
+    };
     if (session?.user) {
-      fetch("/api/me")
-        .then((res) => res.json())
-        .then((user) => setUser(user));
+      getUser();
     }
   }, [session]);
-  console.log("user", user);
   // Provide the context value to the children components
   return (
     <UserContext.Provider value={{ user }}>{children}</UserContext.Provider>

@@ -25,7 +25,6 @@ export function useLogin() {
         statement: `Sign this message to sign in to the app.`,
         nonce: csrf,
       });
-      console.log(message);
       const data = new TextEncoder().encode(message.prepare());
       const signature = await wallet.signMessage(data);
       const serializedSignature = bs58.encode(signature);

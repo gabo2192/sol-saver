@@ -1,5 +1,7 @@
 import { Button } from "@repo/ui/components/ui/button";
 
+import { useSolSaverContext } from "@context/sol-saver-program";
+import { useUserContext } from "@context/user";
 import {
   Dialog,
   DialogClose,
@@ -9,16 +11,19 @@ import {
   DialogTitle,
 } from "@repo/ui/components/ui/dialog";
 import { Input } from "@repo/ui/components/ui/input";
+import {
+  getAccount,
+  getAssociatedTokenAddress,
+  getMint,
+} from "@solana/spl-token";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
+import { Pool, User } from "@types";
 import axios from "axios";
 import BN from "bn.js";
 import clsx from "clsx";
 import { useSession } from "next-auth/react";
 import { FormEvent, useEffect, useState } from "react";
-import { useSolSaverContext } from "../../context/sol-saver-program";
-import { useUserContext } from "../../context/user";
-import { Pool } from "../../types";
 
 interface Props {
   isOpen: boolean;
@@ -35,12 +40,26 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
   const [amount, setAmount] = useState<number>(0);
 
   useEffect(() => {
-    if (session) {
-      const userKey = new PublicKey(session.user.pubkey as string);
-      // console.log({ userKey });
+    const getTokenMintBalance = async (user: User) => {
+      const userKey = new PublicKey(user.publicKey as string);
+      const tokenMint = new PublicKey(pool.tokenMint);
+      const tokenAccount = await getAssociatedTokenAddress(tokenMint, userKey);
+      const info = await getAccount(connection, tokenAccount);
+      const amount = Number(info.amount);
+      const mint = await getMint(connection, info.mint);
+      const balance = amount / 10 ** mint.decimals;
+      setBalance(balance);
+    };
+
+    if (user && !pool.tokenMint) {
+      const userKey = new PublicKey(user.publicKey as string);
+
       connection
         .getBalance(userKey)
         .then((balance) => setBalance(balance / LAMPORTS_PER_SOL));
+    }
+    if (user && pool.tokenMint) {
+      getTokenMintBalance(user);
     }
   }, [session, connection]);
   const stake = user?.stakeEntries.find((stake) => stake.pool.id === pool.id);
@@ -48,8 +67,6 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
     style: "currency",
     currency: "USD",
   }).format(stake?.balance!);
-
-  console.log({ pool });
 
   const handleStake = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -71,7 +88,7 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
       .rpc();
 
     await axios.post(
-      "/api/stake",
+      "/api/user/stake",
       {
         txHash,
         amount: amount,

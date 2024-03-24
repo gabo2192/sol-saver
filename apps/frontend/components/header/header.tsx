@@ -17,8 +17,7 @@ const navigation = [
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { data: session, status } = useSession();
-  const loading = status === "loading";
+  const { data: session } = useSession();
   const { handleSignIn } = useLogin();
   const { isDarkMode, setIsDarkMode } = useAppContext();
   return (
