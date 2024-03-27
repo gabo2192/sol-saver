@@ -10,11 +10,12 @@ interface Props {
 
 export default function AirdropContainer({ tokenMint }: Props) {
   const { user } = useUserContext();
+  console.log({ user });
   const { handleSignIn } = useLogin();
   const handleAirdrop = async () => {
     if (!user) return;
     try {
-      await axios.post<string>("/api/airdrop", {
+      await axios.post<string>("/api/user/airdrop", {
         mint: tokenMint,
       });
     } catch (err) {

@@ -5,6 +5,7 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
+sol-token-saver = "BxRivoj1QuavXdB6buPEitCqQnBE8kfpCiwKdhMx4cEx"
 sol_saver = "8L6PYBgDY1XC64VN6qeDrJtVp6titb2eE6Biaxkinooy"
 
 [registry]

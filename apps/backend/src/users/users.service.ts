@@ -78,8 +78,19 @@ export class UsersService {
   }
 
   async stake(stake: IStake) {
-    const { stakeEntry, poolBalance } = await this.solanaService.stake(stake);
+    console.log({ stake });
 
+    const stakeNumber = stake.amount * LAMPORTS_PER_SOL;
+
+    const pool = await this.poolService.findPoolById(stake.poolId);
+    if (!pool) {
+      throw new Error('Pool not found');
+    }
+    const { stakeEntry, poolBalance } = await this.solanaService.stake({
+      ...stake,
+      tokenMint: pool.tokenMint,
+    });
+    console.log({ poolBalance });
     const dbEntry = await this.userStakeRepository.findOne({
       where: { publicKey: stakeEntry.toBase58() },
       relations: ['pool'],
@@ -94,14 +105,12 @@ export class UsersService {
     } as DeepPartial<UserTransactions>);
 
     await this.historyStakeRepository.save({
-      balance: BigInt(
-        Number(dbEntry.balance) + stake.amount * LAMPORTS_PER_SOL,
-      ),
+      balance: BigInt(Number(dbEntry.balance) + stakeNumber),
       stakeEntry: dbEntry,
     } as DeepPartial<HistoryUserStake>);
 
     await this.poolService.updatePoolBalance(
-      dbEntry.pool.id,
+      pool.id,
       BigInt(Number(poolBalance)),
     );
 

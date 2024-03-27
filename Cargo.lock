@@ -1787,6 +1787,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sol-token-saver"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "solana-program",
+ "spl-token",
+]
+
+[[package]]
 name = "solana-frozen-abi"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

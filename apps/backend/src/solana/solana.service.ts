@@ -9,10 +9,13 @@ import {
 import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
 import {
   TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccount,
   createAssociatedTokenAccountInstruction,
   createMint,
   createTransferInstruction,
   getAssociatedTokenAddress,
+  getOrCreateAssociatedTokenAccount,
+  transfer,
 } from '@solana/spl-token';
 import {
   Connection,
@@ -57,6 +60,28 @@ export class SolanaService {
       this.programAuthority.publicKey,
       6,
     );
+    const saverNetworkFinance = Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.SAVER_NETWORK_FINANCE)),
+    );
+
+    const externalVaultDestination = Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
+    );
+
+    await createAssociatedTokenAccount(
+      this.connection,
+      saverNetworkFinance,
+      token,
+      this.programAuthority.publicKey,
+    );
+
+    await createAssociatedTokenAccount(
+      this.connection,
+      externalVaultDestination,
+      token,
+      this.programAuthority.publicKey,
+    );
+
     return token.toBase58();
   }
 
@@ -208,63 +233,91 @@ export class SolanaService {
     return { stakeEntry: userEntry, pool };
   }
 
-  async stake({ pubkey, txHash, amount }: IStake) {
+  async stake({ pubkey, txHash, amount, tokenMint }: IStake) {
     await confirmTx(txHash, this.connection);
     const userKey = new PublicKey(pubkey);
-
-    const [pool] = PublicKey.findProgramAddressSync(
-      [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
-      this.program.programId,
-    );
-    const [userEntry] = PublicKey.findProgramAddressSync(
-      [userKey.toBuffer(), Buffer.from(process.env.STAKE_ENTRY_STATE_SEED)],
-      this.program?.programId,
-    );
-
-    const vault = Keypair.fromSecretKey(
-      new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
-    );
-    const vaultBalance = await this.connection.getBalance(vault.publicKey);
-
-    console.log({ vaultBalance });
 
     const saverNetworkFinance = Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.SAVER_NETWORK_FINANCE)),
     );
-    console.log({
-      saverNetworkFinance: saverNetworkFinance.publicKey.toBase58(),
-    });
-    const recentBlockhash = await this.connection.getLatestBlockhash();
-    const previewTransfer = new Transaction({
-      feePayer: vault.publicKey,
-      recentBlockhash: recentBlockhash.blockhash,
-    }).add(
-      SystemProgram.transfer({
-        fromPubkey: vault.publicKey,
-        toPubkey: saverNetworkFinance.publicKey,
-        lamports: amount * LAMPORTS_PER_SOL,
-      }),
+
+    if (!tokenMint) {
+      const [pool] = PublicKey.findProgramAddressSync(
+        [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
+        this.program.programId,
+      );
+      const [userEntry] = PublicKey.findProgramAddressSync(
+        [userKey.toBuffer(), Buffer.from(process.env.STAKE_ENTRY_STATE_SEED)],
+        this.program?.programId,
+      );
+
+      const vault = Keypair.fromSecretKey(
+        new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
+      );
+
+      const sendTokensToFinance = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: vault.publicKey,
+          toPubkey: saverNetworkFinance.publicKey,
+          lamports: amount * LAMPORTS_PER_SOL,
+        }),
+      );
+      const poolAct = await this.program.account.poolState.fetch(pool);
+
+      await sendAndConfirmTransaction(this.connection, sendTokensToFinance, [
+        vault,
+      ]);
+
+      return {
+        pool,
+        stakeEntry: userEntry,
+        poolBalance: poolAct.totalStakedSol,
+      };
+    }
+    const [vaultAuthority] = PublicKey.findProgramAddressSync(
+      [Buffer.from('vault_authority')],
+      this.program.programId,
+    );
+    const mint = new PublicKey(tokenMint);
+    const [pool] = PublicKey.findProgramAddressSync(
+      [mint.toBuffer(), Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
+      this.program.programId,
     );
 
-    const estimatedGas = await previewTransfer.getEstimatedFee(this.connection);
-    console.log({ estimatedGas });
-    console.log({
-      saverNetworkFinance: saverNetworkFinance.publicKey.toBase58(),
-    });
-    const sendTokensToFinance = new Transaction().add(
-      SystemProgram.transfer({
-        fromPubkey: vault.publicKey,
-        toPubkey: saverNetworkFinance.publicKey,
-        lamports: amount * LAMPORTS_PER_SOL,
-      }),
+    const [userEntry] = PublicKey.findProgramAddressSync(
+      [
+        userKey.toBuffer(),
+        mint.toBuffer(),
+        Buffer.from(process.env.STAKE_ENTRY_STATE_SEED),
+      ],
+      this.program?.programId,
     );
-    const poolAct = await this.program.account.poolState.fetch(pool);
 
-    await sendAndConfirmTransaction(this.connection, sendTokensToFinance, [
-      vault,
-    ]);
+    const poolAct = await this.program.account.tokenPoolState.fetch(pool);
+    const saverAccountToken = await getOrCreateAssociatedTokenAccount(
+      this.connection,
+      saverNetworkFinance,
+      mint,
+      this.programAuthority.publicKey,
+    );
 
-    return { pool, stakeEntry: userEntry, poolBalance: poolAct.totalStakedSol };
+    const test = await transfer(
+      this.connection,
+      this.programAuthority,
+      poolAct.tokenVault,
+      saverAccountToken.address,
+      vaultAuthority,
+      amount * LAMPORTS_PER_SOL,
+      [this.programAuthority],
+    );
+
+    console.log({ test });
+
+    return {
+      pool,
+      stakeEntry: userEntry,
+      poolBalance: poolAct.amount,
+    };
   }
 
   async unstake({ pubkey }: { pubkey: string }) {

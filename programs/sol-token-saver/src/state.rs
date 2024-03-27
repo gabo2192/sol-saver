@@ -28,6 +28,18 @@ pub struct PoolState {
 }
 
 #[account]
+pub struct TokenPoolState {
+    pub authority: Pubkey,
+    pub bump: u8,
+    pub amount: u64,
+    pub external_vault_destination: Pubkey,
+    pub token_mint: Pubkey,
+    pub initialized_at: i64,
+    pub distribution_rate: u128,
+    pub user_deposit_amt: u64
+}
+
+#[account]
 pub struct StakeEntry {
     pub user: Pubkey,
     pub bump: u8,

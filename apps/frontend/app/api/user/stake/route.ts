@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       {
         txHash: body.txHash,
         amount: Number(body.amount),
+        poolId: Number(body.poolId),
       },
       {
         headers: {

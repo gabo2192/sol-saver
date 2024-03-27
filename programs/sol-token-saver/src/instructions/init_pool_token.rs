@@ -12,15 +12,9 @@ pub struct InitializeTokenPool<'info> {
         space = 8 + TOKEN_STAKE_POOL_SIZE
     )]
     pub pool_state: Account<'info, TokenPoolState>,
-    #[account(
-        init,
-        token::mint = token_mint,
-        token::authority = vault_authority,
-        seeds = [token_mint.key().as_ref(), vault_authority.key().as_ref(), VAULT_SEED.as_bytes()],
-        bump,
-        payer = program_authority
-    )]
-    pub token_vault: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub external_vault_destination: Account<'info, TokenAccount>,
+    /// CHECK:
     #[account(mut)]
     pub token_mint: Account<'info, Mint>,
 
@@ -30,12 +24,6 @@ pub struct InitializeTokenPool<'info> {
         @ StakeError::InvalidProgramAuthority
     )]
     pub program_authority: Signer<'info>,
-    /// CHECK: This is not dangerous because we're only using this as a program signer
-    #[account(
-        seeds = [VAULT_AUTH_SEED.as_bytes()],
-        bump
-    )]
-    pub vault_authority: AccountInfo<'info>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -49,13 +37,9 @@ pub fn init_pool_token_handler(ctx: Context<InitializeTokenPool>) -> Result<()>{
     pool_state.bump = ctx.bumps.pool_state;
     pool_state.amount = 0;
     pool_state.user_deposit_amt = 0;
-    pool_state.token_vault = ctx.accounts.token_vault.key();
+    pool_state.external_vault_destination = ctx.accounts.external_vault_destination.key();
     pool_state.token_mint = ctx.accounts.token_mint.key();
     pool_state.initialized_at = Clock::get().unwrap().unix_timestamp;
-    pool_state.vault_bump = ctx.bumps.token_vault;
-    pool_state.vault_auth_bump = ctx.bumps.vault_authority;
-    pool_state.vault_authority = ctx.accounts.vault_authority.key();
-
     Ok(())
 }
 

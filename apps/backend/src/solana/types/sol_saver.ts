@@ -168,6 +168,52 @@ export type SolSaver = {
       ];
     },
     {
+      name: 'stakeToken';
+      accounts: [
+        {
+          name: 'pool';
+          isMut: true;
+          isSigner: false;
+        },
+        {
+          name: 'tokenVault';
+          isMut: true;
+          isSigner: false;
+        },
+        {
+          name: 'user';
+          isMut: true;
+          isSigner: true;
+        },
+        {
+          name: 'userStakeEntry';
+          isMut: true;
+          isSigner: false;
+        },
+        {
+          name: 'userTokenAccount';
+          isMut: true;
+          isSigner: false;
+        },
+        {
+          name: 'tokenProgram';
+          isMut: false;
+          isSigner: false;
+        },
+        {
+          name: 'systemProgram';
+          isMut: false;
+          isSigner: false;
+        },
+      ];
+      args: [
+        {
+          name: 'stakeAmount';
+          type: 'u64';
+        },
+      ];
+    },
+    {
       name: 'unstake';
       accounts: [
         {
@@ -495,6 +541,52 @@ export const IDL: SolSaver = {
         {
           name: 'userStakeEntry',
           isMut: true,
+          isSigner: false,
+        },
+        {
+          name: 'systemProgram',
+          isMut: false,
+          isSigner: false,
+        },
+      ],
+      args: [
+        {
+          name: 'stakeAmount',
+          type: 'u64',
+        },
+      ],
+    },
+    {
+      name: 'stakeToken',
+      accounts: [
+        {
+          name: 'pool',
+          isMut: true,
+          isSigner: false,
+        },
+        {
+          name: 'tokenVault',
+          isMut: true,
+          isSigner: false,
+        },
+        {
+          name: 'user',
+          isMut: true,
+          isSigner: true,
+        },
+        {
+          name: 'userStakeEntry',
+          isMut: true,
+          isSigner: false,
+        },
+        {
+          name: 'userTokenAccount',
+          isMut: true,
+          isSigner: false,
+        },
+        {
+          name: 'tokenProgram',
+          isMut: false,
           isSigner: false,
         },
         {

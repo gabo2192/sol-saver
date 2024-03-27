@@ -15,18 +15,9 @@ pub mod sol_saver {
     pub fn init_pool(ctx: Context<InitializePool>)-> Result<()>{
         init_pool_handler(ctx)
     }
-
-    pub fn init_pool_token(ctx: Context<InitializeTokenPool>) -> Result<()>{
-        init_pool_token_handler(ctx)
-    }
-
     pub fn init_stake_entry(ctx: Context<InitEntryCtx>) -> Result<()>{
         init_stake_entry_handler(ctx)
-    }
-
-    pub fn init_token_stake_entry(ctx: Context<InitTokenEntryCtx>) -> Result<()>{
-        init_token_stake_entry_handler(ctx)
-    }
+    } 
     pub fn stake(ctx: Context<StakeCtx>, stake_amount: u64) -> Result<()>{
         stake_handler(ctx, stake_amount)
     }

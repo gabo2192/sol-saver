@@ -15,6 +15,7 @@ import {
   getAccount,
   getAssociatedTokenAddress,
   getMint,
+  TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
@@ -44,6 +45,7 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
       const userKey = new PublicKey(user.publicKey as string);
       const tokenMint = new PublicKey(pool.tokenMint);
       const tokenAccount = await getAssociatedTokenAddress(tokenMint, userKey);
+      console.log({ tokenAccount: tokenAccount.toBase58() });
       const info = await getAccount(connection, tokenAccount);
       const amount = Number(info.amount);
       const mint = await getMint(connection, info.mint);
@@ -61,7 +63,7 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
     if (user && pool.tokenMint) {
       getTokenMintBalance(user);
     }
-  }, [session, connection]);
+  }, [connection, user]);
   const stake = user?.stakeEntries.find((stake) => stake.pool.id === pool.id);
   const formattedCurrency = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -75,26 +77,61 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
     const userKey = new PublicKey(session?.user?.pubkey as string);
 
     const userEntry = new PublicKey(stake?.publicKey as string);
+    let txHash: string | undefined;
+    if (!pool.tokenMint) {
+      txHash = await program?.methods
+        .stake(new BN(Number(amount) * LAMPORTS_PER_SOL))
+        .accounts({
+          pool: poolPubkey,
+          systemProgram: SystemProgram.programId,
+          user: userKey,
+          externalSolDestination: vault,
+          userStakeEntry: userEntry,
+        })
+        .rpc();
+      await axios.post(
+        "/api/user/stake",
+        {
+          txHash,
+          amount: amount,
+          poolId: pool.id,
+        },
+        { withCredentials: true }
+      );
+    } else {
+      const {
+        data: { vault },
+      } = await axios.get<{ vault: string }>(
+        "/api/pool/token-vault/" + pool.id,
+        { withCredentials: true }
+      );
+      console.log({ vault });
+      const vaultKey = new PublicKey(vault);
+      const tokenMint = new PublicKey(pool.tokenMint);
+      const userAccount = await getAssociatedTokenAddress(tokenMint, userKey);
 
-    const txHash = await program?.methods
-      .stake(new BN(Number(amount) * LAMPORTS_PER_SOL))
-      .accounts({
-        pool: poolPubkey,
-        systemProgram: SystemProgram.programId,
-        user: userKey,
-        externalSolDestination: vault,
-        userStakeEntry: userEntry,
-      })
-      .rpc();
-
-    await axios.post(
-      "/api/user/stake",
-      {
-        txHash,
-        amount: amount,
-      },
-      { withCredentials: true }
-    );
+      txHash = await program?.methods
+        .stakeToken(new BN(Number(amount) * LAMPORTS_PER_SOL))
+        .accounts({
+          pool: poolPubkey,
+          systemProgram: SystemProgram.programId,
+          user: userKey,
+          userStakeEntry: userEntry,
+          tokenVault: vaultKey,
+          userTokenAccount: userAccount,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+      await axios.post(
+        "/api/user/stake",
+        {
+          txHash,
+          amount: amount,
+          poolId: pool.id,
+        },
+        { withCredentials: true }
+      );
+    }
   };
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
