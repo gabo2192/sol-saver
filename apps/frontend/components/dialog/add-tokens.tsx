@@ -15,7 +15,6 @@ import {
   getAccount,
   getAssociatedTokenAddress,
   getMint,
-  TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
@@ -42,15 +41,21 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
 
   useEffect(() => {
     const getTokenMintBalance = async (user: User) => {
-      const userKey = new PublicKey(user.publicKey as string);
-      const tokenMint = new PublicKey(pool.tokenMint);
-      const tokenAccount = await getAssociatedTokenAddress(tokenMint, userKey);
-      console.log({ tokenAccount: tokenAccount.toBase58() });
-      const info = await getAccount(connection, tokenAccount);
-      const amount = Number(info.amount);
-      const mint = await getMint(connection, info.mint);
-      const balance = amount / 10 ** mint.decimals;
-      setBalance(balance);
+      try {
+        const userKey = new PublicKey(user.publicKey as string);
+        const tokenMint = new PublicKey(pool.tokenMint);
+        const tokenAccount = await getAssociatedTokenAddress(
+          tokenMint,
+          userKey
+        );
+        const info = await getAccount(connection, tokenAccount);
+        const amount = Number(info.amount);
+        const mint = await getMint(connection, info.mint);
+        const balance = amount / 10 ** mint.decimals;
+        setBalance(balance);
+      } catch {
+        setBalance(0);
+      }
     };
 
     if (user && !pool.tokenMint) {
@@ -85,7 +90,7 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
           pool: poolPubkey,
           systemProgram: SystemProgram.programId,
           user: userKey,
-          externalSolDestination: vault,
+          externalVaultDestination: vault,
           userStakeEntry: userEntry,
         })
         .rpc();
@@ -111,15 +116,13 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
       const userAccount = await getAssociatedTokenAddress(tokenMint, userKey);
 
       txHash = await program?.methods
-        .stakeToken(new BN(Number(amount) * LAMPORTS_PER_SOL))
+        .stake(new BN(Number(amount) * LAMPORTS_PER_SOL))
         .accounts({
           pool: poolPubkey,
           systemProgram: SystemProgram.programId,
           user: userKey,
           userStakeEntry: userEntry,
-          tokenVault: vaultKey,
-          userTokenAccount: userAccount,
-          tokenProgram: TOKEN_PROGRAM_ID,
+          externalVaultDestination: vaultKey,
         })
         .rpc();
       await axios.post(

@@ -11,11 +11,12 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const searchParams = url.searchParams;
   const tokenMint = searchParams.get("tokenMint");
-  const programId = new PublicKey(
-    process.env.NEXT_PUBLIC_PROGRAM_PUBKEY as string
-  );
+
   const userKey = new PublicKey(token.sub as string);
   if (!tokenMint) {
+    const programId = new PublicKey(
+      process.env.NEXT_PUBLIC_PROGRAM_PUBKEY as string
+    );
     const [userEntry] = PublicKey.findProgramAddressSync(
       [userKey.toBuffer(), Buffer.from(process.env.STAKE_ENTRY_STATE_SEED!)],
       programId
@@ -23,6 +24,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(userEntry);
   }
   const mintKey = new PublicKey(tokenMint);
+  const programId = new PublicKey(
+    process.env.NEXT_PUBLIC_TOKEN_PROGRAM_PUBKEY as string
+  );
   const [userEntry] = PublicKey.findProgramAddressSync(
     [
       userKey.toBuffer(),

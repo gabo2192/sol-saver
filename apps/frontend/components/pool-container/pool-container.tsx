@@ -30,11 +30,12 @@ export default function PoolContainer({ pool }: Props) {
   const pathname = usePathname();
 
   const { user } = useUserContext();
+  console.log({ user });
   const userStake = user?.stakeEntries?.find(
     (stake) => stake.pool.id === pool.id
   );
   const usd = (userStake?.balance! / LAMPORTS_PER_SOL) * 180;
-  const { program } = useSolSaverContext();
+  const { program, tokenProgram } = useSolSaverContext();
 
   const formattedCurrency = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -69,8 +70,8 @@ export default function PoolContainer({ pool }: Props) {
           })
           .rpc();
       } else {
-        txHash = await program?.methods
-          .initTokenStakeEntry()
+        txHash = await tokenProgram?.methods
+          .initStakeEntry()
           .accounts({
             user: user.publicKey,
             userStakeEntry: userEntry,
@@ -79,7 +80,7 @@ export default function PoolContainer({ pool }: Props) {
           .rpc();
       }
       await axios.post(
-        "/api/init-stake-entry",
+        "/api/user/init-stake-entry",
         {
           txHash,
           poolAddress,
@@ -92,6 +93,7 @@ export default function PoolContainer({ pool }: Props) {
   };
 
   const handleStake = async ({ poolId }: { poolId: number }) => {
+    setError(null);
     if (!user) {
       return;
     }

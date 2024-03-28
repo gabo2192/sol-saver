@@ -30,7 +30,7 @@ export default function Layout({ children }: Props) {
         />
       </Head>
       <Header />
-      <main className="px-3 ">{children}</main>
+      <main className="px-3 max-w-3xl mx-auto">{children}</main>
     </>
   );
 }

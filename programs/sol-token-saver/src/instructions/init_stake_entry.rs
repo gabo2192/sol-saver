@@ -17,7 +17,7 @@ pub struct InitEntryCtx<'info>{
     )]
     pub user_stake_entry: Account<'info, StakeEntry>,
     #[account(
-        seeds = [pool_state.token_mint.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
+        seeds = [pool_state.external_vault_destination.key().as_ref(), pool_state.token_mint.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
         bump = pool_state.bump
     )]
     pub pool_state: Account<'info, PoolState>,

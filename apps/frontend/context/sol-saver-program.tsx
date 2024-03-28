@@ -7,11 +7,13 @@ import { SolTokenSaver } from "../types/sol_token_saver";
 
 interface SolSaverContext {
   program: anchor.Program<SolSaver> | null;
+  tokenProgram: anchor.Program<SolTokenSaver> | null;
 }
 
 // Create a new context
 const SolSaverContext = createContext<SolSaverContext>({
   program: null,
+  tokenProgram: null,
 });
 
 // Create a provider component
@@ -52,7 +54,7 @@ const SolSaverProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Provide the context value to the children components
   return (
-    <SolSaverContext.Provider value={{ program }}>
+    <SolSaverContext.Provider value={{ program, tokenProgram }}>
       {children}
     </SolSaverContext.Provider>
   );

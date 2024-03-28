@@ -10,7 +10,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ContextLayout>
-          <Layout>{children} </Layout>{" "}
+          <Layout>{children}</Layout>
         </ContextLayout>
       </body>
     </html>

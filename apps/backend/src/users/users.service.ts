@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { PoolService } from 'src/pool/pool.service';
 import { PrizeService } from 'src/prize/prize.service';
+import { SolanaTokenService } from 'src/solana/solana-token.service';
 import { SolanaService } from 'src/solana/solana.service';
 import { InitStakeEntryDto } from 'src/users/dtos/init-stake-entry.dto';
 import { UserStake } from 'src/users/entities/user-stake.entity';
@@ -27,6 +28,7 @@ export class UsersService {
     private solanaService: SolanaService,
     private poolService: PoolService,
     private prizeService: PrizeService,
+    private solanaTokenService: SolanaTokenService,
   ) {}
 
   async getUser(publicKey: string) {
@@ -49,20 +51,28 @@ export class UsersService {
     if (!pooldb) {
       throw new Error('Pool not found');
     }
-
-    const { stakeEntry: entry } = await this.solanaService.initStakeEntry({
-      txHash: stakeEntry.txHash,
-      pubkey: stakeEntry.pubkey,
-      tokenMint: pooldb.tokenMint,
-    });
-
+    let entry: string;
+    if (!pooldb.tokenMint) {
+      const data = await this.solanaService.initStakeEntry({
+        txHash: stakeEntry.txHash,
+        pubkey: stakeEntry.pubkey,
+      });
+      entry = data.stakeEntry.toBase58();
+    } else {
+      const data = await this.solanaTokenService.initStakeEntry({
+        pubkey: stakeEntry.pubkey,
+        txHash: stakeEntry.txHash,
+        tokenMint: pooldb.tokenMint,
+      });
+      entry = data.stakeEntry.toBase58();
+    }
     const findUser = await this.getUser(stakeEntry.pubkey);
 
     const dbEntry = this.userStakeRepository.create({
       balance: BigInt(0),
       pool: pooldb.id,
       user: findUser.id,
-      publicKey: entry.toBase58(),
+      publicKey: entry,
       lastStakedAt: new Date(),
     } as DeepPartial<UserStake>);
     const dbEntrySaved = await this.userStakeRepository.save(dbEntry);

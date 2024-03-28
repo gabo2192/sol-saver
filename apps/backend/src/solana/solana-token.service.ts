@@ -162,30 +162,13 @@ export class SolanaTokenService {
   }: {
     txHash: string;
     pubkey: string;
-    tokenMint?: string;
+    tokenMint: string;
   }) {
     await confirmTx(txHash, this.connection);
     const userKey = new PublicKey(pubkey);
 
-    if (!tokenMint) {
-      const [userEntry] = PublicKey.findProgramAddressSync(
-        [userKey.toBuffer(), Buffer.from(process.env.STAKE_ENTRY_STATE_SEED)],
-        this.program?.programId,
-      );
-
-      const [pool] = PublicKey.findProgramAddressSync(
-        [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
-        this.program.programId,
-      );
-      const userStakeEntry =
-        await this.program.account.stakeEntry.fetch(userEntry);
-      if (!userStakeEntry) {
-        throw new Error('User stake entry not found');
-      }
-
-      return { stakeEntry: userEntry, pool };
-    }
     const mint = new PublicKey(tokenMint);
+
     const [userEntry] = PublicKey.findProgramAddressSync(
       [
         userKey.toBuffer(),
@@ -195,17 +178,12 @@ export class SolanaTokenService {
       this.program?.programId,
     );
 
-    const [pool] = PublicKey.findProgramAddressSync(
-      [mint.toBuffer(), Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
-      this.program.programId,
-    );
-
     const userStakeEntry =
       await this.program.account.stakeEntry.fetch(userEntry);
     if (!userStakeEntry) {
       throw new Error('User stake entry not found');
     }
-    return { stakeEntry: userEntry, pool };
+    return { stakeEntry: userEntry };
   }
 
   async stake({ pubkey, txHash, amount, tokenMint }: IStake) {
