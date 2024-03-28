@@ -19,7 +19,7 @@ pub const STAKE_ENTRY_SIZE: usize = 8 + 32 + 1 + 8 + 8 + 16;
 #[account]
 pub struct PoolState {
     pub bump: u8,
-    pub total_staked_sol: u64,
+    pub amount: u64,
     pub initialized_at: i64,
     pub last_reward_timestamp: i64, // Added field for tracking rewards
     pub user_deposit_amt: u64,

@@ -7,19 +7,15 @@ use {
 
 
 #[derive(Accounts)]
-pub struct StakeTokenCtx <'info> {
+pub struct StakeCtx <'info> {
     #[account(
         mut,
-        seeds = [pool.token_mint.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
+        seeds = [external_vault_destination.key().as_ref(), pool.token_mint.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
         bump = pool.bump
     )]
-    pub pool: Account<'info, TokenPoolState>,
-    #[account(
-        mut,
-        seeds = [pool.token_mint.key().as_ref(), pool.vault_authority.key().as_ref(), VAULT_SEED.as_bytes()],
-        bump = pool.vault_bump
-    )]
-    pub token_vault: Account<'info, TokenAccount>,
+    pub pool: Account<'info, PoolState>,
+    #[account(mut)]
+    pub external_vault_destination: Account<'info, TokenAccount>,
     #[account(
         mut,
         constraint = user.key() == user_stake_entry.user
@@ -43,7 +39,7 @@ pub struct StakeTokenCtx <'info> {
     pub system_program: Program<'info, System>
 }
 
-pub fn stake_token_handler(ctx: Context<StakeTokenCtx>, stake_amount: u64) -> Result<()> {
+pub fn stake_handler(ctx: Context<StakeCtx>, stake_amount: u64) -> Result<()> {
     // transfer amount from user token acct to vault
     transfer(ctx.accounts.transfer_ctx(), stake_amount)?;
 
@@ -67,12 +63,12 @@ pub fn stake_token_handler(ctx: Context<StakeTokenCtx>, stake_amount: u64) -> Re
     Ok(())
 }
 
-impl<'info> StakeTokenCtx <'info> {
+impl<'info> StakeCtx <'info> {
     pub fn transfer_ctx(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = Transfer {
             from: self.user_token_account.to_account_info(),
-            to: self.token_vault.to_account_info(),
+            to: self.external_vault_destination.to_account_info(),
             authority: self.user.to_account_info()
         };
 

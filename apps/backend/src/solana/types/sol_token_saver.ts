@@ -1,9 +1,9 @@
-export type SolSaver = {
+export type SolTokenSaver = {
   "version": "0.1.0",
-  "name": "sol_saver",
+  "name": "sol_token_saver",
   "instructions": [
     {
-      "name": "initPool",
+      "name": "initPoolToken",
       "accounts": [
         {
           "name": "poolState",
@@ -16,9 +16,19 @@ export type SolSaver = {
           "isSigner": false
         },
         {
+          "name": "tokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "programAuthority",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "systemProgram",
@@ -83,6 +93,16 @@ export type SolSaver = {
           "isSigner": false
         },
         {
+          "name": "userTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -106,16 +126,31 @@ export type SolSaver = {
         {
           "name": "externalVaultDestination",
           "isMut": true,
-          "isSigner": true
+          "isSigner": false
         },
         {
           "name": "user",
           "isMut": true,
-          "isSigner": false
+          "isSigner": true
         },
         {
           "name": "userStakeEntry",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -134,6 +169,10 @@ export type SolSaver = {
         "kind": "struct",
         "fields": [
           {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
             "name": "bump",
             "type": "u8"
           },
@@ -142,24 +181,24 @@ export type SolSaver = {
             "type": "u64"
           },
           {
-            "name": "initializedAt",
-            "type": "i64"
-          },
-          {
-            "name": "lastRewardTimestamp",
-            "type": "i64"
-          },
-          {
-            "name": "userDepositAmt",
-            "type": "u64"
-          },
-          {
             "name": "externalVaultDestination",
             "type": "publicKey"
           },
           {
-            "name": "authority",
+            "name": "tokenMint",
             "type": "publicKey"
+          },
+          {
+            "name": "initializedAt",
+            "type": "i64"
+          },
+          {
+            "name": "distributionRate",
+            "type": "u128"
+          },
+          {
+            "name": "userDepositAmt",
+            "type": "u64"
           }
         ]
       }
@@ -217,12 +256,12 @@ export type SolSaver = {
   ]
 };
 
-export const IDL: SolSaver = {
+export const IDL: SolTokenSaver = {
   "version": "0.1.0",
-  "name": "sol_saver",
+  "name": "sol_token_saver",
   "instructions": [
     {
-      "name": "initPool",
+      "name": "initPoolToken",
       "accounts": [
         {
           "name": "poolState",
@@ -235,9 +274,19 @@ export const IDL: SolSaver = {
           "isSigner": false
         },
         {
+          "name": "tokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "programAuthority",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "systemProgram",
@@ -302,6 +351,16 @@ export const IDL: SolSaver = {
           "isSigner": false
         },
         {
+          "name": "userTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -325,16 +384,31 @@ export const IDL: SolSaver = {
         {
           "name": "externalVaultDestination",
           "isMut": true,
-          "isSigner": true
+          "isSigner": false
         },
         {
           "name": "user",
           "isMut": true,
-          "isSigner": false
+          "isSigner": true
         },
         {
           "name": "userStakeEntry",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -353,6 +427,10 @@ export const IDL: SolSaver = {
         "kind": "struct",
         "fields": [
           {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
             "name": "bump",
             "type": "u8"
           },
@@ -361,24 +439,24 @@ export const IDL: SolSaver = {
             "type": "u64"
           },
           {
-            "name": "initializedAt",
-            "type": "i64"
-          },
-          {
-            "name": "lastRewardTimestamp",
-            "type": "i64"
-          },
-          {
-            "name": "userDepositAmt",
-            "type": "u64"
-          },
-          {
             "name": "externalVaultDestination",
             "type": "publicKey"
           },
           {
-            "name": "authority",
+            "name": "tokenMint",
             "type": "publicKey"
+          },
+          {
+            "name": "initializedAt",
+            "type": "i64"
+          },
+          {
+            "name": "distributionRate",
+            "type": "u128"
+          },
+          {
+            "name": "userDepositAmt",
+            "type": "u64"
           }
         ]
       }

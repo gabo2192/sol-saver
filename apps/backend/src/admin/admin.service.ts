@@ -1,35 +1,58 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { PoolService } from 'src/pool/pool.service';
 import { PrizeService } from 'src/prize/prize.service';
+import { SolanaTokenService } from 'src/solana/solana-token.service';
 import { SolanaService } from 'src/solana/solana.service';
 import { UsersService } from 'src/users/users.service';
+import { Repository } from 'typeorm';
 import { IPool } from '../pool/interfaces/pool';
+import { Vault } from './entities/vault.entity';
 
 @Injectable()
 export class AdminService {
+  @InjectRepository(Vault)
+  private vaultRepository: Repository<Vault>;
   constructor(
     private solanaService: SolanaService,
+    private solanaTokenService: SolanaTokenService,
     private poolService: PoolService,
     private userService: UsersService,
     private prizeService: PrizeService,
   ) {}
 
   async createTokenMint() {
-    return this.solanaService.createTokenMint();
+    try {
+      const { tokenMint, vaultAddress } =
+        await this.solanaTokenService.createTokenMint();
+      await this.vaultRepository.save({
+        tokenMint,
+        vaultAddress,
+      });
+      return true;
+    } catch (err) {
+      console.log({ err });
+      return false;
+    }
   }
 
   async createPool(
     adminPool: Omit<IPool, 'id' | 'tokenVault' | 'poolAddress'>,
   ): Promise<any> {
-    const { pool, vault } = await this.solanaService.createPool({
-      tokenMint: adminPool.tokenMint,
-    });
+    let createPoolResponse: { pool: string; vault: string } | null = null;
+    if (!adminPool.tokenMint) {
+      createPoolResponse = await this.solanaService.createPool();
+    } else {
+      createPoolResponse = await this.solanaTokenService.createPool({
+        tokenMint: adminPool.tokenMint,
+      });
+    }
     return this.poolService.createOrFindPool({
-      poolAddress: pool,
+      poolAddress: createPoolResponse.pool,
       tokenLogoUri: adminPool.tokenLogoUri,
       tokenName: adminPool.tokenName,
       tokenSymbol: adminPool.tokenSymbol,
-      tokenVault: vault,
+      tokenVault: createPoolResponse.vault,
       tokenMint: adminPool.tokenMint,
     });
   }

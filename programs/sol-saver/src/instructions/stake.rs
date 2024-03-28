@@ -8,13 +8,14 @@ use {
 pub struct StakeCtx<'info> {
     #[account(
         mut,
-        seeds = [STAKE_POOL_STATE_SEED.as_bytes()],
+        has_one = external_vault_destination,
+        seeds = [external_vault_destination.key().as_ref(),STAKE_POOL_STATE_SEED.as_bytes()],
         bump = pool.bump
     )]
     pub pool: Account<'info, PoolState>,
     /// CHECK:
     #[account(mut)]
-    pub external_sol_destination: AccountInfo<'info>,
+    pub external_vault_destination: AccountInfo<'info>,
     #[account(
         mut,
         constraint = user.key() == user_stake_entry.user
@@ -35,7 +36,7 @@ pub fn stake_handler(ctx: Context<StakeCtx>, stake_amount: u64) -> Result<()> {
     // transfer amount from user token acct to vault
     transfer(ctx.accounts.transfer_ctx(), stake_amount)?;
 
-    msg!("Pool initial total: {}", ctx.accounts.pool.total_staked_sol);
+    msg!("Pool initial total: {}", ctx.accounts.pool.amount);
     msg!("Initial user deposits: {}", ctx.accounts.pool.user_deposit_amt);
     msg!("User entry initial balance: {}", ctx.accounts.user_stake_entry.balance);
 
@@ -44,9 +45,9 @@ pub fn stake_handler(ctx: Context<StakeCtx>, stake_amount: u64) -> Result<()> {
     let user_entry = &mut ctx.accounts.user_stake_entry;
     msg!("Current pool: {:?}", pool);
 
-    pool.total_staked_sol = pool.total_staked_sol.checked_add(stake_amount).unwrap();
+    pool.amount = pool.amount.checked_add(stake_amount).unwrap();
     pool.user_deposit_amt = pool.user_deposit_amt.checked_add(stake_amount).unwrap();
-    msg!("Current pool total: {}", pool.total_staked_sol);
+    msg!("Current pool total: {}", pool.amount);
     msg!("Amount of tokens deposited by users: {}", pool.user_deposit_amt);
 
     // update user stake entry
@@ -63,7 +64,7 @@ impl<'info> StakeCtx <'info> {
         let cpi_program = self.system_program.to_account_info();
         let cpi_accounts = Transfer {
             from: self.user.to_account_info(),
-            to: self.external_sol_destination.to_account_info(),
+            to: self.external_vault_destination.to_account_info(),
         };
 
         CpiContext::new(cpi_program, cpi_accounts)

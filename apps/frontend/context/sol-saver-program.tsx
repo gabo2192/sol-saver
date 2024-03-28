@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { IDL, SolSaver } from "../../backend/src/solana/types/sol_saver";
+import { IDL, SolSaver } from "../types/sol_saver";
 
 import * as anchor from "@project-serum/anchor";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import { SolTokenSaver } from "../types/sol_token_saver";
 
 interface SolSaverContext {
   program: anchor.Program<SolSaver> | null;
@@ -16,13 +17,15 @@ const SolSaverContext = createContext<SolSaverContext>({
 // Create a provider component
 const SolSaverProvider = ({ children }: { children: React.ReactNode }) => {
   const [program, setProgram] = useState<anchor.Program<SolSaver> | null>(null);
+  const [tokenProgram, setTokenProgram] =
+    useState<anchor.Program<SolTokenSaver> | null>(null);
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
 
   useEffect(() => {
     if (connection && wallet) {
       const anchorConnection = new anchor.web3.Connection(
-        "http://localhost:8899",
+        process.env.NEXT_PUBLIC_APP_NETWORK as string,
         {
           commitment: "confirmed",
         }
@@ -37,7 +40,13 @@ const SolSaverProvider = ({ children }: { children: React.ReactNode }) => {
         process.env.NEXT_PUBLIC_PROGRAM_PUBKEY as string,
         anchorProvider
       );
+      const _tokenProgram = new anchor.Program<SolTokenSaver>(
+        JSON.parse(JSON.stringify(IDL)),
+        process.env.NEXT_PUBLIC_TOKEN_PROGRAM_PUBKEY as string,
+        anchorProvider
+      );
       setProgram(_program);
+      setTokenProgram(_tokenProgram);
     }
   }, [wallet, connection]);
 

@@ -1,7 +1,7 @@
 pub mod errors;
 pub mod instructions;
 pub mod state;
-use anchor_lang::prelude::*;
+use {anchor_lang::prelude::*, instructions::*};
 
 declare_id!("BxRivoj1QuavXdB6buPEitCqQnBE8kfpCiwKdhMx4cEx");
 
@@ -9,14 +9,17 @@ declare_id!("BxRivoj1QuavXdB6buPEitCqQnBE8kfpCiwKdhMx4cEx");
 pub mod sol_token_saver {
     use super::*;
 
-    pub fn init_pool_token(ctx: Context<InitializeTokenPool>) -> Result<()>{
-        init_pool_token_handler(ctx)
+    pub fn init_pool_token(ctx: Context<InitializePool>) -> Result<()>{
+        init_pool_handler(ctx)
     }
-    pub fn init_token_stake_entry(ctx: Context<InitTokenEntryCtx>) -> Result<()>{
-        init_token_stake_entry_handler(ctx)
+    pub fn init_stake_entry(ctx: Context<InitEntryCtx>) -> Result<()>{
+        init_stake_entry_handler(ctx)
     }
-    pub fn stake_token(ctx: Context<StakeTokenCtx>, stake_amount: u64) -> Result<()>{
-        stake_token_handler(ctx, stake_amount)
+    pub fn stake(ctx: Context<StakeCtx>, stake_amount: u64) -> Result<()>{
+        stake_handler(ctx, stake_amount)
+    }
+    pub fn unstake(ctx: Context<UnstakeCtx>) -> Result<()>{
+        unstake_handler(ctx)
     }
 }
 

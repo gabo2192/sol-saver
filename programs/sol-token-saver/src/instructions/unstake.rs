@@ -1,6 +1,8 @@
 use {
-    crate::{state::*, errors::*}, 
-    anchor_lang::{prelude::*, system_program::{transfer, Transfer}}, 
+    crate::{errors::*, state::*}, 
+    anchor_lang::prelude::*, 
+    anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer},
+
 };
 #[derive(Accounts)]
 pub struct UnstakeCtx<'info>{
@@ -13,22 +15,40 @@ pub struct UnstakeCtx<'info>{
     pub pool: Account<'info, PoolState>,
     /// CHECK:
     #[account(mut)] 
-    pub external_vault_destination: Signer<'info>, 
-    /// CHECK:
-    #[account(mut)]
-    pub user: AccountInfo<'info>,
+    pub external_vault_destination: Account<'info, TokenAccount>, 
+    #[account(
+        mut,
+        constraint = user.key() == user_stake_entry.user
+        @ StakeError::InvalidUser
+    )]
+    pub user: Signer<'info>,
     #[account(
         mut, 
-        seeds = [user.key().as_ref(), STAKE_ENTRY_SEED.as_bytes()],
+        seeds = [user.key().as_ref(), pool.token_mint.key().as_ref(), STAKE_ENTRY_SEED.as_bytes()],
         bump = user_stake_entry.bump
     )]
     pub user_stake_entry: Account<'info, StakeEntry>,
+    #[account(
+        mut,
+        constraint = user_token_account.mint == pool.token_mint
+        @ StakeError::InvalidMint
+    )]
+    pub user_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        constraint = token_mint.key() == pool.token_mint
+        @ StakeError::InvalidMint
+    )]
+    
+    pub token_mint: Account<'info, Mint>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>
 }
 
 pub fn unstake_handler(ctx: Context<UnstakeCtx>) -> Result<()>{
     let out_amount = ctx.accounts.user_stake_entry.balance;
-    let fee_amount = 2000;
+    let fee_amount = 20000;
     if out_amount < fee_amount {
         return Err(StakeError::InsufficientFunds.into());
     }
@@ -57,6 +77,8 @@ impl<'info> UnstakeCtx <'info> {
         let cpi_accounts = Transfer {
             from: self.external_vault_destination.to_account_info(),
             to: self.user.to_account_info(),
+            authority: self.pool.to_account_info()
+
         };
 
         CpiContext::new(cpi_program, cpi_accounts)

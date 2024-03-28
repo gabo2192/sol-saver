@@ -6,7 +6,7 @@ use {
 pub struct InitializePool<'info> {
     #[account(
         init,
-        seeds = [STAKE_POOL_STATE_SEED.as_bytes()],
+        seeds = [external_vault_destination.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
         bump,
         payer = program_authority,
         space = 8 + STAKE_POOL_SIZE
@@ -15,7 +15,6 @@ pub struct InitializePool<'info> {
     /// CHECK:
     #[account(mut)]
     pub external_vault_destination: AccountInfo<'info>,
-
     #[account(
         mut,
         constraint = program_authority.key() == PROGRAM_AUTHORITY
@@ -32,7 +31,7 @@ pub fn init_pool_handler(ctx: Context<InitializePool>) -> Result<()>{
     let pool_state= &mut ctx.accounts.pool_state;
 
     pool_state.bump = ctx.bumps.pool_state;
-    pool_state.total_staked_sol = 0;
+    pool_state.amount = 0;
     pool_state.user_deposit_amt = 0;
     pool_state.initialized_at = Clock::get().unwrap().unix_timestamp;
     pool_state.last_reward_timestamp = 0;

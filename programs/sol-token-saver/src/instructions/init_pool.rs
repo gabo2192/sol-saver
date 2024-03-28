@@ -3,18 +3,18 @@ use {
 };
 
 #[derive(Accounts)]
-pub struct InitializeTokenPool<'info> {
+pub struct InitializePool<'info> {
     #[account(
         init,
-        seeds = [token_mint.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
+        seeds = [external_vault_destination.key().as_ref(), token_mint.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
         bump,
         payer = program_authority,
         space = 8 + TOKEN_STAKE_POOL_SIZE
     )]
-    pub pool_state: Account<'info, TokenPoolState>,
+    pub pool_state: Account<'info, PoolState>,
+    /// CHECK:
     #[account(mut)]
     pub external_vault_destination: Account<'info, TokenAccount>,
-    /// CHECK:
     #[account(mut)]
     pub token_mint: Account<'info, Mint>,
 
@@ -30,7 +30,7 @@ pub struct InitializeTokenPool<'info> {
 }
 
 
-pub fn init_pool_token_handler(ctx: Context<InitializeTokenPool>) -> Result<()>{
+pub fn init_pool_handler(ctx: Context<InitializePool>) -> Result<()>{
     // initialize pool state
     let pool_state = &mut ctx.accounts.pool_state;
     pool_state.authority = ctx.accounts.program_authority.key();

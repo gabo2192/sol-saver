@@ -17,9 +17,30 @@ if ! cp "$src_dir/idl/sol_saver.json" "$backend_dest_dir"; then
   exit 1
 fi
 
+if ! cp "$src_dir/idl/sol_token_saver.json" "$backend_dest_dir"; then
+  echo "Error copying sol_saver.json to backend."
+  exit 1
+fi
+
+if ! cp "$src_dir/types/sol_saver.ts" "$backend_dest_dir"; then
+  echo "Error copying sol_saver.ts to frontend."
+  exit 1
+fi
+
+if ! cp "$src_dir/types/sol_token_saver.ts" "$backend_dest_dir"; then
+  echo "Error copying sol_saver.ts to frontend."
+  exit 1
+fi
+
 if ! cp "$src_dir/types/sol_saver.ts" "$frontend_dest_dir"; then
   echo "Error copying sol_saver.ts to frontend."
   exit 1
 fi
+
+if ! cp "$src_dir/types/sol_token_saver.ts" "$frontend_dest_dir"; then
+  echo "Error copying sol_saver.ts to frontend."
+  exit 1
+fi
+
 
 echo "Build outputs copied successfully!"

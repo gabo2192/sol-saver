@@ -13,7 +13,7 @@ export class AdminController {
   }
 
   @Post('create-mint')
-  async createMint(): Promise<string> {
+  async createMint(): Promise<boolean> {
     return await this.adminService.createTokenMint();
   }
 

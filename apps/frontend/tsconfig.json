@@ -12,6 +12,7 @@
       "@lib/*": ["./lib/*"],
       "@context/*": ["./context/*"],
       "@types": ["./types"],
+      "@types/*": ["./types/*"],
       "@utils/*": ["./utils/*"],
       "@ui/*": ["../../packages/ui/src/*"]
     }

@@ -5,7 +5,7 @@ use {
 
 
 #[derive(Accounts)]
-pub struct InitTokenEntryCtx<'info>{
+pub struct InitEntryCtx<'info>{
     #[account(mut)]
     pub user : Signer<'info>,
     #[account(
@@ -20,11 +20,11 @@ pub struct InitTokenEntryCtx<'info>{
         seeds = [pool_state.token_mint.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
         bump = pool_state.bump
     )]
-    pub pool_state: Account<'info, TokenPoolState>,
+    pub pool_state: Account<'info, PoolState>,
     pub system_program: Program<'info, System>,
 }
 
-pub fn init_token_stake_entry_handler(ctx: Context<InitTokenEntryCtx>) -> Result<()>{
+pub fn init_stake_entry_handler(ctx: Context<InitEntryCtx>) -> Result<()>{
 
     let user_entry = &mut ctx.accounts.user_stake_entry;
     user_entry.user = ctx.accounts.user.key();

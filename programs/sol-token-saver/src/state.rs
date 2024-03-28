@@ -15,20 +15,9 @@ pub static PROGRAM_AUTHORITY: Pubkey = pubkey!("H9uX2etBfTv7Sd6puRsMTtVvqCSVfPNf
 pub const STAKE_ENTRY_SEED: &str = "stake_entry";
 pub const STAKE_ENTRY_SIZE: usize = 8 + 32 + 1 + 8 + 8 + 16;
 
-#[derive(Debug)]
-#[account]
-pub struct PoolState {
-    pub bump: u8,
-    pub total_staked_sol: u64,
-    pub initialized_at: i64,
-    pub last_reward_timestamp: i64, // Added field for tracking rewards
-    pub user_deposit_amt: u64,
-    pub external_vault_destination: Pubkey,
-    pub authority: Pubkey,
-}
 
 #[account]
-pub struct TokenPoolState {
+pub struct PoolState {
     pub authority: Pubkey,
     pub bump: u8,
     pub amount: u64,

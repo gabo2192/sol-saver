@@ -8,9 +8,13 @@ import {
 } from '@project-serum/anchor';
 import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
 import {
+  TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
+  createMint,
   createTransferInstruction,
   getAssociatedTokenAddress,
+  getOrCreateAssociatedTokenAccount,
+  transfer,
 } from '@solana/spl-token';
 import {
   Connection,
@@ -24,11 +28,11 @@ import {
 } from '@solana/web3.js';
 import { IStake } from 'src/users/interfaces/stake';
 import { confirmTx } from 'utils/confirm-tx';
-import { IDL, SolSaver } from './types/sol_saver';
+import { SolTokenSaver, IDL as tokenIDL } from './types/sol_token_saver';
 
 @Injectable()
-export class SolanaService {
-  private program: Program<SolSaver>;
+export class SolanaTokenService {
+  private program: Program<SolTokenSaver>;
   private provider: AnchorProvider;
   private connection: Connection;
   private programAuthority: Keypair;
@@ -42,29 +46,85 @@ export class SolanaService {
 
     this.provider = new AnchorProvider(this.connection, this.wallet, {});
     setProvider(this.provider);
-    const programId = new PublicKey(process.env.PROGRAM_PUBKEY as string);
+    const tokenProgramId = new PublicKey(
+      process.env.TOKEN_PROGRAM_ID as string,
+    );
 
-    this.program = new Program(IDL as Idl, programId) as Program<SolSaver>;
+    this.program = new Program(
+      tokenIDL as Idl,
+      tokenProgramId,
+    ) as Program<SolTokenSaver>;
   }
 
-  async createPool(): Promise<{ pool: string; vault: string }> {
-    const programAuthority = web3.Keypair.fromSecretKey(
-      new Uint8Array(JSON.parse(process.env.PROGRAM_AUTHORITY_SEEDS)),
+  async createTokenMint() {
+    const token = await createMint(
+      this.connection,
+      this.programAuthority,
+      this.programAuthority.publicKey,
+      this.programAuthority.publicKey,
+      9,
     );
-
-    const vault = web3.Keypair.fromSecretKey(
+    const saverNetworkFinance = Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.SAVER_NETWORK_FINANCE)),
+    );
+    console.log({
+      saverNetworkFinance: saverNetworkFinance.publicKey.toBase58(),
+    });
+    const externalVaultDestination = Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
     );
+    console.log({
+      externalVaultDestination: externalVaultDestination.publicKey.toBase58(),
+    });
+    console.log({ token: token.toBase58() });
+
+    const vaultAddress = await getOrCreateAssociatedTokenAccount(
+      this.connection,
+      externalVaultDestination,
+      token,
+      this.programAuthority.publicKey,
+    );
+    await getOrCreateAssociatedTokenAccount(
+      this.connection,
+      saverNetworkFinance,
+      token,
+      this.programAuthority.publicKey,
+    );
+
+    return {
+      tokenMint: token.toBase58(),
+      vaultAddress: vaultAddress.address.toBase58(),
+    };
+  }
+
+  async createPool({
+    tokenMint,
+  }: {
+    tokenMint: string;
+  }): Promise<{ pool: string; vault: string }> {
+    console.log(tokenMint);
+    const mint = new PublicKey(tokenMint);
+
+    const vault = Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
+    );
+    const vaultAccount = await getOrCreateAssociatedTokenAccount(
+      this.connection,
+      vault,
+      mint,
+      this.programAuthority.publicKey,
+    );
+    console.log({ vaultAccount });
     const [pool] = PublicKey.findProgramAddressSync(
       [
-        vault.publicKey.toBuffer(),
+        vaultAccount.address.toBuffer(),
+        mint.toBuffer(),
         Buffer.from(process.env.STAKE_POOL_STATE_SEED),
       ],
       this.program.programId,
     );
-
+    console.log({ pool: pool.toBase58() });
     const poolPublicKey = pool.toBase58();
-
     const createdPool = await this.program.account.poolState
       .fetch(pool)
       .catch(() => {
@@ -72,21 +132,24 @@ export class SolanaService {
       });
 
     if (createdPool) {
-      return { pool: poolPublicKey, vault: vault.publicKey.toBase58() };
+      return { pool: poolPublicKey, vault: vaultAccount.address.toBase58() };
     }
+    console.log(vaultAccount.address.toBase58());
     try {
       await this.program.methods
-        .initPool()
+        .initPoolToken()
         .accounts({
-          programAuthority: programAuthority.publicKey,
+          programAuthority: this.programAuthority.publicKey,
           rent: SYSVAR_RENT_PUBKEY,
           systemProgram: SystemProgram.programId,
           poolState: pool,
-          externalVaultDestination: vault.publicKey,
+          tokenMint: mint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          externalVaultDestination: vaultAccount.address,
         })
-        .signers([programAuthority])
+        .signers([this.programAuthority])
         .rpc();
-      return { pool: pool.toBase58(), vault: vault.publicKey.toBase58() };
+      return { pool: pool.toBase58(), vault: vaultAccount.address.toBase58() };
     } catch (e) {
       console.log({ e });
       throw new Error('Error creating pool');
@@ -145,7 +208,7 @@ export class SolanaService {
     return { stakeEntry: userEntry, pool };
   }
 
-  async stake({ pubkey, txHash, amount }: IStake) {
+  async stake({ pubkey, txHash, amount, tokenMint }: IStake) {
     await confirmTx(txHash, this.connection);
     const userKey = new PublicKey(pubkey);
 
@@ -153,31 +216,44 @@ export class SolanaService {
       new Uint8Array(JSON.parse(process.env.SAVER_NETWORK_FINANCE)),
     );
 
-    const [pool] = PublicKey.findProgramAddressSync(
-      [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
+    const [vaultAuthority] = PublicKey.findProgramAddressSync(
+      [Buffer.from('vault_authority')],
       this.program.programId,
     );
+    const mint = new PublicKey(tokenMint);
+    const [pool] = PublicKey.findProgramAddressSync(
+      [mint.toBuffer(), Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
+      this.program.programId,
+    );
+
     const [userEntry] = PublicKey.findProgramAddressSync(
-      [userKey.toBuffer(), Buffer.from(process.env.STAKE_ENTRY_STATE_SEED)],
+      [
+        userKey.toBuffer(),
+        mint.toBuffer(),
+        Buffer.from(process.env.STAKE_ENTRY_STATE_SEED),
+      ],
       this.program?.programId,
     );
 
-    const vault = Keypair.fromSecretKey(
-      new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
-    );
-
-    const sendTokensToFinance = new Transaction().add(
-      SystemProgram.transfer({
-        fromPubkey: vault.publicKey,
-        toPubkey: saverNetworkFinance.publicKey,
-        lamports: amount * LAMPORTS_PER_SOL,
-      }),
-    );
     const poolAct = await this.program.account.poolState.fetch(pool);
+    const saverAccountToken = await getOrCreateAssociatedTokenAccount(
+      this.connection,
+      saverNetworkFinance,
+      mint,
+      this.programAuthority.publicKey,
+    );
 
-    await sendAndConfirmTransaction(this.connection, sendTokensToFinance, [
-      vault,
-    ]);
+    const test = await transfer(
+      this.connection,
+      this.programAuthority,
+      poolAct.externalVaultDestination,
+      saverAccountToken.address,
+      vaultAuthority,
+      amount * LAMPORTS_PER_SOL,
+      [this.programAuthority],
+    );
+
+    console.log({ test });
 
     return {
       pool,
