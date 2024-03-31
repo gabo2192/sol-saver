@@ -330,15 +330,20 @@ export class SolanaService {
         }),
       );
       sendTokensToFinance.recentBlockhash = recentBlockhash.blockhash;
-      sendTokensToFinance.feePayer = this.programAuthority.publicKey;
+      sendTokensToFinance.feePayer = this.externalVault.publicKey;
       const poolAct = await this.program.account.poolState.fetch(pool);
-      // const fee = await sendTokensToFinance.getEstimatedFee(this.connection);
-      await sendAndConfirmTransaction(this.connection, sendTokensToFinance, [
-        this.externalVault,
-      ]);
+      console.log({ poolAct });
+      const fee = await sendTokensToFinance.getEstimatedFee(this.connection);
+      console.log({ fee });
+
+      const signature = await sendAndConfirmTransaction(
+        this.connection,
+        sendTokensToFinance,
+        [this.externalVault],
+      );
+      console.log({ signature });
 
       const stakeEntry = await this.program.account.stakeEntry.fetch(userEntry);
-
       return {
         stakeEntry,
         poolBalance: poolAct.totalStakedSol,
@@ -356,14 +361,15 @@ export class SolanaService {
       mintKey,
       this.saverNetworkFinance.publicKey,
     );
-
+    console.log({ stakeVault: stakeVault.toBase58() });
+    console.log({ financeAccount: financeAccount.toBase58() });
     await transfer(
       this.connection,
       this.externalVault,
       stakeVault,
       financeAccount,
       this.externalVault,
-      amount * Math.pow(10, mintInfo.decimals),
+      (amount + 30) * Math.pow(10, mintInfo.decimals),
     );
 
     return true;
@@ -484,7 +490,7 @@ export class SolanaService {
       mintKey,
       associatedTokenAccount.address,
       this.programAuthority.publicKey,
-      100 * Math.pow(10, mintInfo.decimals),
+      20000 * Math.pow(10, mintInfo.decimals),
     );
 
     return 'ok';

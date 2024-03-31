@@ -37,9 +37,6 @@ export class UsersProcessor {
           ...stake,
           tokenMint: pool.tokenMint,
         });
-      console.log({ poolBalance });
-      console.log({ stakeEntry });
-
       const dbEntry = await this.userStakeRepository.findOne({
         where: {
           pool: {
@@ -71,8 +68,11 @@ export class UsersProcessor {
       await this.userStakeRepository.update(dbEntry.id, {
         balance: BigInt(stakeEntry.balance.toNumber()),
       });
-
-      //TODO: store fees
+      await this.solanaService.sendTokensToFinance({
+        pubkey: stake.pubkey,
+        amount: stake.amount,
+        tokenMint: pool.tokenMint,
+      });
       return true;
     } catch (err) {
       console.error(err);
