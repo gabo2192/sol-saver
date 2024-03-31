@@ -71,10 +71,15 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
     }
   }, [session, user]);
   const stake = user?.stakeEntries.find((stake) => stake.pool.id === pool.id);
+  const usd =
+    pool.tokenSymbol === "SOL"
+      ? (stake?.balance! / LAMPORTS_PER_SOL) * 180
+      : (stake?.balance || 0) / Math.pow(10, pool.decimals);
+
   const formattedCurrency = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-  }).format(stake?.balance!);
+  }).format(usd);
 
   const handleStake = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
