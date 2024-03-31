@@ -15,6 +15,7 @@ export interface Pool {
   supplyApy: number;
   poolAddress: string;
   tokenVault: string;
+  decimals: number;
   tokenMint: string;
   createdAt: string;
 }

@@ -15,6 +15,7 @@ import {
   getAccount,
   getAssociatedTokenAddress,
   getMint,
+  TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
@@ -41,14 +42,21 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
 
   useEffect(() => {
     const getTokenMintBalance = async (user: User) => {
-      const userKey = new PublicKey(user.publicKey as string);
-      const tokenMint = new PublicKey(pool.tokenMint);
-      const tokenAccount = await getAssociatedTokenAddress(tokenMint, userKey);
-      const info = await getAccount(connection, tokenAccount);
-      const amount = Number(info.amount);
-      const mint = await getMint(connection, info.mint);
-      const balance = amount / 10 ** mint.decimals;
-      setBalance(balance);
+      try {
+        const userKey = new PublicKey(user.publicKey as string);
+        const tokenMint = new PublicKey(pool.tokenMint);
+        const tokenAccount = await getAssociatedTokenAddress(
+          tokenMint,
+          userKey
+        );
+        const info = await getAccount(connection, tokenAccount);
+        const amount = Number(info.amount);
+        const mint = await getMint(connection, info.mint);
+        const balance = amount / 10 ** mint.decimals;
+        setBalance(balance);
+      } catch {
+        setBalance(0);
+      }
     };
 
     if (user && !pool.tokenMint) {
@@ -56,12 +64,12 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
 
       connection
         .getBalance(userKey)
-        .then((balance) => setBalance(balance / LAMPORTS_PER_SOL));
+        .then((balance) => setBalance(balance / Math.pow(10, pool.decimals)));
     }
     if (user && pool.tokenMint) {
       getTokenMintBalance(user);
     }
-  }, [session, connection]);
+  }, [session, user]);
   const stake = user?.stakeEntries.find((stake) => stake.pool.id === pool.id);
   const formattedCurrency = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -70,31 +78,59 @@ export default function AddTokensDialog({ isOpen, onClose, pool }: Props) {
 
   const handleStake = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!program) return;
     const poolPubkey = new PublicKey(pool.poolAddress);
     const vault = new PublicKey(pool.tokenVault);
     const userKey = new PublicKey(session?.user?.pubkey as string);
 
     const userEntry = new PublicKey(stake?.publicKey as string);
+    let txHash: string | undefined;
+    try {
+      if (!pool.tokenMint) {
+        txHash = await program?.methods
+          .stake(new BN(Number(amount) * LAMPORTS_PER_SOL))
+          .accounts({
+            pool: poolPubkey,
+            systemProgram: SystemProgram.programId,
+            user: userKey,
+            externalVaultDestination: vault,
+            userStakeEntry: userEntry,
+          })
+          .rpc();
+      } else {
+        const mintKey = new PublicKey(pool.tokenMint);
+        const vaultKey = new PublicKey(pool.tokenVault);
+        const mintInfo = await getMint(connection, mintKey);
+        const decimals = mintInfo.decimals;
+        const userAccount = await getAssociatedTokenAddress(mintKey, userKey);
+        const account = await getAccount(connection, userAccount);
+        console.log({ account });
+        txHash = await program?.methods
+          .stakeToken(new BN(amount * Math.pow(10, decimals)))
+          .accounts({
+            pool: poolPubkey,
+            externalVaultDestination: vaultKey,
+            user: userKey,
+            userStakeEntry: userEntry,
+            userTokenAccount: userAccount,
+            systemProgram: SystemProgram.programId,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .rpc();
+      }
 
-    const txHash = await program?.methods
-      .stake(new BN(Number(amount) * LAMPORTS_PER_SOL))
-      .accounts({
-        pool: poolPubkey,
-        systemProgram: SystemProgram.programId,
-        user: userKey,
-        externalSolDestination: vault,
-        userStakeEntry: userEntry,
-      })
-      .rpc();
-
-    await axios.post(
-      "/api/user/stake",
-      {
-        txHash,
-        amount: amount,
-      },
-      { withCredentials: true }
-    );
+      await axios.post(
+        "/api/user/stake",
+        {
+          txHash,
+          amount: amount,
+          pool: pool.id,
+        },
+        { withCredentials: true }
+      );
+    } catch (e) {
+      console.error(e);
+    }
   };
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

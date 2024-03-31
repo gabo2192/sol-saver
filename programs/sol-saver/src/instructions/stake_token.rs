@@ -1,17 +1,18 @@
 use {
-    anchor_lang::{prelude::*, system_program::{transfer, Transfer}},
-    crate::{state::*, errors::*},
+    crate::{errors::*, state::*}, 
+    anchor_lang::prelude::*, 
+    anchor_spl::token::{TokenAccount, Token, Transfer, transfer},
 };
 
 
 #[derive(Accounts)]
-pub struct StakeCtx<'info> {
+pub struct StakeTokenCtx<'info> {
     #[account(
         mut,
-        seeds = [external_vault_destination.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
+        seeds = [external_vault_destination.key().as_ref(), pool.token_mint.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
         bump = pool.bump
     )]
-    pub pool: Account<'info, PoolState>,
+    pub pool: Account<'info, TokenPoolState>,
     /// CHECK:
     #[account(mut)]
     pub external_vault_destination: AccountInfo<'info>,
@@ -23,30 +24,37 @@ pub struct StakeCtx<'info> {
     pub user: Signer<'info>,
     #[account(
         mut,
-        seeds = [user.key().as_ref(), STAKE_ENTRY_SEED.as_bytes()],
+        seeds = [user.key().as_ref(), pool.token_mint.key().as_ref(), STAKE_ENTRY_SEED.as_bytes()],
         bump = user_stake_entry.bump
     )]
     pub user_stake_entry: Account<'info, StakeEntry>,
+    #[account(
+        mut,
+        constraint = user_token_account.mint == pool.token_mint
+        @ StakeError::InvalidMint
+    )]
+    pub user_token_account: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>
 }
 
-pub fn stake_handler(ctx: Context<StakeCtx>, stake_amount: u64) -> Result<()> {
+pub fn stake_token_handler(ctx: Context<StakeTokenCtx>, stake_amount: u64) -> Result<()> {
     msg!("Staking {} tokens", stake_amount);
     // transfer amount from user token acct to vault
     transfer(ctx.accounts.transfer_ctx(), stake_amount)?;
 
-    msg!("Pool initial total: {}", ctx.accounts.pool.total_staked_sol);
+    msg!("Pool initial total: {}", ctx.accounts.pool.amount);
     msg!("Initial user deposits: {}", ctx.accounts.pool.user_deposit_amt);
     msg!("User entry initial balance: {}", ctx.accounts.user_stake_entry.balance);
 
     // update pool state amount
     let pool = &mut ctx.accounts.pool;
     let user_entry = &mut ctx.accounts.user_stake_entry;
-    msg!("Current pool: {:?}", pool);
+  
 
-    pool.total_staked_sol = pool.total_staked_sol.checked_add(stake_amount).unwrap();
+    pool.amount = pool.amount.checked_add(stake_amount).unwrap();
     pool.user_deposit_amt = pool.user_deposit_amt.checked_add(stake_amount).unwrap();
-    msg!("Current pool total: {}", pool.total_staked_sol);
+    msg!("Current pool total: {}", pool.amount);
     msg!("Amount of tokens deposited by users: {}", pool.user_deposit_amt);
 
     // update user stake entry
@@ -58,12 +66,13 @@ pub fn stake_handler(ctx: Context<StakeCtx>, stake_amount: u64) -> Result<()> {
 }
 
 
-impl<'info> StakeCtx <'info> {
+impl<'info> StakeTokenCtx <'info> {
     pub fn transfer_ctx(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
-        let cpi_program = self.system_program.to_account_info();
+        let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = Transfer {
-            from: self.user.to_account_info(),
+            from: self.user_token_account.to_account_info(),
             to: self.external_vault_destination.to_account_info(),
+            authority: self.user.to_account_info()
         };
 
         CpiContext::new(cpi_program, cpi_accounts)

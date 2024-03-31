@@ -6,7 +6,7 @@ use {
 pub struct InitializePool<'info> {
     #[account(
         init,
-        seeds = [STAKE_POOL_STATE_SEED.as_bytes()],
+        seeds = [external_vault_destination.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
         bump,
         payer = program_authority,
         space = 8 + STAKE_POOL_SIZE

@@ -33,7 +33,10 @@ export default function PoolContainer({ pool }: Props) {
   const userStake = user?.stakeEntries?.find(
     (stake) => stake.pool.id === pool.id
   );
-  const usd = (userStake?.balance! / LAMPORTS_PER_SOL) * 180;
+  const usd =
+    pool.tokenSymbol === "SOL"
+      ? (userStake?.balance! / LAMPORTS_PER_SOL) * 180
+      : (userStake?.balance || 0) / Math.pow(10, pool.decimals);
   const { program } = useSolSaverContext();
 
   const formattedCurrency = new Intl.NumberFormat("en-US", {
@@ -79,7 +82,7 @@ export default function PoolContainer({ pool }: Props) {
           .rpc();
       }
       await axios.post(
-        "/api/init-stake-entry",
+        "/api/user/init-stake-entry",
         {
           txHash,
           poolAddress,
@@ -165,7 +168,7 @@ export default function PoolContainer({ pool }: Props) {
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-semibold text-center">
-                  Deposited: {userStake.balance / LAMPORTS_PER_SOL}{" "}
+                  Deposited: {userStake.balance / Math.pow(10, pool.decimals)}{" "}
                   {pool.tokenSymbol}
                 </p>
               </CardContent>

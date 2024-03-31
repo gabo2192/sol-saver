@@ -1,3 +1,4 @@
+import { InjectQueue } from '@nestjs/bull';
 import {
   Body,
   Controller,
@@ -8,6 +9,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { Queue } from 'bull';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { AuthRequest } from 'src/auth/interfaces/AuthRequest.interface';
 import { InitStakeEntryDto } from './dtos/init-stake-entry.dto';
@@ -16,7 +18,11 @@ import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {
-  constructor(private userService: UsersService) {}
+  constructor(
+    @InjectQueue('users-queue')
+    private readonly usersQueue: Queue,
+    private userService: UsersService,
+  ) {}
 
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -35,7 +41,11 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   @Post('stake')
   async stake(@Req() { pubkey }: AuthRequest, @Body() stake: StakeDto) {
-    return this.userService.stake({ ...stake, pubkey });
+    console.log({ stake });
+    console.log(this.usersQueue);
+    await this.usersQueue.add('stake', { ...stake, pubkey });
+    console.log('wtf');
+    return true;
   }
 
   @UseGuards(AuthGuard)
@@ -68,5 +78,12 @@ export class UsersController {
     @Body() { mint }: { mint: string },
   ) {
     return this.userService.airdrop(pubkey, mint);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Get('test')
+  async test() {
+    await this.usersQueue.add('test', { foo: 'bar' });
+    return true;
   }
 }

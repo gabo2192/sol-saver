@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { IDL, SolSaver } from "../../backend/src/solana/types/sol_saver";
+import { IDL, SolSaver } from "../types/sol_saver";
 
 import * as anchor from "@project-serum/anchor";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
@@ -22,7 +22,7 @@ const SolSaverProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (connection && wallet) {
       const anchorConnection = new anchor.web3.Connection(
-        "http://localhost:8899",
+        process.env.NEXT_PUBLIC_APP_NETWORK as string,
         {
           commitment: "confirmed",
         }

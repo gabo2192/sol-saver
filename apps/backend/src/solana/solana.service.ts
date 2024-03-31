@@ -9,10 +9,12 @@ import {
 import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
 import {
   TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
   createMint,
-  createTransferInstruction,
   getAssociatedTokenAddress,
+  getMint,
+  getOrCreateAssociatedTokenAccount,
+  mintTo,
+  transfer,
 } from '@solana/spl-token';
 import {
   Connection,
@@ -35,6 +37,8 @@ export class SolanaService {
   private connection: Connection;
   private programAuthority: Keypair;
   private wallet: NodeWallet;
+  private saverNetworkFinance: Keypair;
+  private externalVault: Keypair;
   constructor() {
     this.connection = new Connection(process.env.SOLANA_NODE, 'confirmed');
     this.programAuthority = web3.Keypair.fromSecretKey(
@@ -47,15 +51,35 @@ export class SolanaService {
     const programId = new PublicKey(process.env.PROGRAM_PUBKEY as string);
 
     this.program = new Program(IDL as Idl, programId) as Program<SolSaver>;
+    this.saverNetworkFinance = Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.SAVER_NETWORK_FINANCE)),
+    );
+    this.externalVault = web3.Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
+    );
   }
 
   async createTokenMint() {
+    console.log(this.externalVault.publicKey.toBase58());
+    console.log(this.saverNetworkFinance.publicKey.toBase58());
     const token = await createMint(
       this.connection,
       this.programAuthority,
       this.programAuthority.publicKey,
       this.programAuthority.publicKey,
       6,
+    );
+    await getOrCreateAssociatedTokenAccount(
+      this.connection,
+      this.programAuthority,
+      token,
+      this.saverNetworkFinance.publicKey,
+    );
+    await getOrCreateAssociatedTokenAccount(
+      this.connection,
+      this.programAuthority,
+      token,
+      this.externalVault.publicKey,
     );
     return token.toBase58();
   }
@@ -70,15 +94,16 @@ export class SolanaService {
     );
 
     if (!tokenMint) {
-      const vault = web3.Keypair.fromSecretKey(
-        new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
-      );
       const [pool] = PublicKey.findProgramAddressSync(
-        [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
+        [
+          this.externalVault.publicKey.toBuffer(),
+          Buffer.from(process.env.STAKE_POOL_STATE_SEED),
+        ],
         this.program.programId,
       );
 
       const poolPublicKey = pool.toBase58();
+      console.log({ poolPublicKey });
 
       const createdPool = await this.program.account.poolState
         .fetch(pool)
@@ -89,7 +114,10 @@ export class SolanaService {
         });
 
       if (createdPool) {
-        return { pool: poolPublicKey, vault: vault.publicKey.toBase58() };
+        return {
+          pool: poolPublicKey,
+          vault: this.externalVault.publicKey.toBase58(),
+        };
       }
       try {
         await this.program.methods
@@ -99,11 +127,14 @@ export class SolanaService {
             rent: SYSVAR_RENT_PUBKEY,
             systemProgram: SystemProgram.programId,
             poolState: pool,
-            externalVaultDestination: vault.publicKey,
+            externalVaultDestination: this.externalVault.publicKey,
           })
           .signers([programAuthority])
           .rpc();
-        return { pool: pool.toBase58(), vault: vault.publicKey.toBase58() };
+        return {
+          pool: pool.toBase58(),
+          vault: this.externalVault.publicKey.toBase58(),
+        };
       } catch (e) {
         console.log({ e });
         throw new Error('Error creating pool');
@@ -111,25 +142,25 @@ export class SolanaService {
     }
 
     const mint = new PublicKey(tokenMint);
+    const stakeVault = await getAssociatedTokenAddress(
+      mint,
+      this.externalVault.publicKey,
+    );
     const [pool] = PublicKey.findProgramAddressSync(
-      [mint.toBuffer(), Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
+      [
+        stakeVault.toBuffer(),
+        mint.toBuffer(),
+        Buffer.from(process.env.STAKE_POOL_STATE_SEED),
+      ],
       this.program.programId,
     );
-    const [vaultAuthority] = await PublicKey.findProgramAddress(
-      [Buffer.from('vault_authority')],
-      this.program.programId,
-    );
+
     const poolPublicKey = pool.toBase58();
     const createdPool = await this.program.account.tokenPoolState
       .fetch(pool)
       .catch(() => {
         console.log('pool is not created is safe for us to initialize a pool');
       });
-
-    const [stakeVault] = await PublicKey.findProgramAddressSync(
-      [mint.toBuffer(), vaultAuthority.toBuffer(), Buffer.from('vault')],
-      this.program.programId,
-    );
 
     if (createdPool) {
       return { pool: poolPublicKey, vault: stakeVault.toBase58() };
@@ -144,8 +175,7 @@ export class SolanaService {
           poolState: pool,
           tokenMint: mint,
           tokenProgram: TOKEN_PROGRAM_ID,
-          tokenVault: stakeVault,
-          vaultAuthority,
+          externalVaultDestination: stakeVault,
         })
         .signers([programAuthority])
         .rpc();
@@ -208,63 +238,135 @@ export class SolanaService {
     return { stakeEntry: userEntry, pool };
   }
 
-  async stake({ pubkey, txHash, amount }: IStake) {
+  async stake({ pubkey, txHash, tokenMint }: IStake & { tokenMint?: string }) {
     await confirmTx(txHash, this.connection);
     const userKey = new PublicKey(pubkey);
 
+    if (!tokenMint) {
+      const [pool] = PublicKey.findProgramAddressSync(
+        [
+          this.externalVault.publicKey.toBuffer(),
+          Buffer.from(process.env.STAKE_POOL_STATE_SEED),
+        ],
+        this.program.programId,
+      );
+      const [userEntry] = PublicKey.findProgramAddressSync(
+        [userKey.toBuffer(), Buffer.from(process.env.STAKE_ENTRY_STATE_SEED)],
+        this.program?.programId,
+      );
+
+      const poolAct = await this.program.account.poolState.fetch(pool);
+      const stakeEntry = await this.program.account.stakeEntry.fetch(userEntry);
+
+      return {
+        stakeEntry,
+        poolBalance: poolAct.totalStakedSol,
+        decimals: LAMPORTS_PER_SOL,
+      };
+    }
+    const mintKey = new PublicKey(tokenMint);
+    const mintInfo = await getMint(this.connection, mintKey);
+    const stakeVault = await getAssociatedTokenAddress(
+      mintKey,
+      this.externalVault.publicKey,
+    );
     const [pool] = PublicKey.findProgramAddressSync(
-      [Buffer.from(process.env.STAKE_POOL_STATE_SEED)],
+      [
+        stakeVault.toBuffer(),
+        mintKey.toBuffer(),
+        Buffer.from(process.env.STAKE_POOL_STATE_SEED),
+      ],
       this.program.programId,
     );
     const [userEntry] = PublicKey.findProgramAddressSync(
-      [userKey.toBuffer(), Buffer.from(process.env.STAKE_ENTRY_STATE_SEED)],
+      [
+        userKey.toBuffer(),
+        mintKey.toBuffer(),
+        Buffer.from(process.env.STAKE_ENTRY_STATE_SEED),
+      ],
       this.program?.programId,
     );
+    console.log({ userEntry });
+    const stakeEntry = await this.program.account.stakeEntry.fetch(userEntry);
+    const poolAct = await this.program.account.tokenPoolState.fetch(pool);
+    return {
+      stakeEntry,
+      poolBalance: poolAct.amount,
+      decimals: Math.pow(10, mintInfo.decimals),
+    };
+  }
 
-    const vault = Keypair.fromSecretKey(
-      new Uint8Array(JSON.parse(process.env.VAULT_SEEDS)),
+  async sendTokensToFinance({
+    pubkey,
+    amount,
+    tokenMint,
+  }: {
+    pubkey: string;
+    amount: number;
+    tokenMint?: string;
+  }) {
+    const userKey = new PublicKey(pubkey);
+
+    if (!tokenMint) {
+      const [pool] = PublicKey.findProgramAddressSync(
+        [
+          this.externalVault.publicKey.toBuffer(),
+          Buffer.from(process.env.STAKE_POOL_STATE_SEED),
+        ],
+        this.program.programId,
+      );
+      const [userEntry] = PublicKey.findProgramAddressSync(
+        [userKey.toBuffer(), Buffer.from(process.env.STAKE_ENTRY_STATE_SEED)],
+        this.program?.programId,
+      );
+
+      const recentBlockhash = await this.connection.getLatestBlockhash();
+
+      const sendTokensToFinance = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: this.externalVault.publicKey,
+          toPubkey: this.saverNetworkFinance.publicKey,
+          lamports: amount * LAMPORTS_PER_SOL,
+        }),
+      );
+      sendTokensToFinance.recentBlockhash = recentBlockhash.blockhash;
+      sendTokensToFinance.feePayer = this.programAuthority.publicKey;
+      const poolAct = await this.program.account.poolState.fetch(pool);
+      // const fee = await sendTokensToFinance.getEstimatedFee(this.connection);
+      await sendAndConfirmTransaction(this.connection, sendTokensToFinance, [
+        this.externalVault,
+      ]);
+
+      const stakeEntry = await this.program.account.stakeEntry.fetch(userEntry);
+
+      return {
+        stakeEntry,
+        poolBalance: poolAct.totalStakedSol,
+        decimals: LAMPORTS_PER_SOL,
+      };
+    }
+    const mintKey = new PublicKey(tokenMint);
+    const mintInfo = await getMint(this.connection, mintKey);
+
+    const stakeVault = await getAssociatedTokenAddress(
+      mintKey,
+      this.externalVault.publicKey,
     );
-    const vaultBalance = await this.connection.getBalance(vault.publicKey);
-
-    console.log({ vaultBalance });
-
-    const saverNetworkFinance = Keypair.fromSecretKey(
-      new Uint8Array(JSON.parse(process.env.SAVER_NETWORK_FINANCE)),
-    );
-    console.log({
-      saverNetworkFinance: saverNetworkFinance.publicKey.toBase58(),
-    });
-    const recentBlockhash = await this.connection.getLatestBlockhash();
-    const previewTransfer = new Transaction({
-      feePayer: vault.publicKey,
-      recentBlockhash: recentBlockhash.blockhash,
-    }).add(
-      SystemProgram.transfer({
-        fromPubkey: vault.publicKey,
-        toPubkey: saverNetworkFinance.publicKey,
-        lamports: amount * LAMPORTS_PER_SOL,
-      }),
+    const financeAccount = await getAssociatedTokenAddress(
+      mintKey,
+      this.saverNetworkFinance.publicKey,
     );
 
-    const estimatedGas = await previewTransfer.getEstimatedFee(this.connection);
-    console.log({ estimatedGas });
-    console.log({
-      saverNetworkFinance: saverNetworkFinance.publicKey.toBase58(),
-    });
-    const sendTokensToFinance = new Transaction().add(
-      SystemProgram.transfer({
-        fromPubkey: vault.publicKey,
-        toPubkey: saverNetworkFinance.publicKey,
-        lamports: amount * LAMPORTS_PER_SOL,
-      }),
+    await transfer(
+      this.connection,
+      this.externalVault,
+      stakeVault,
+      financeAccount,
+      this.externalVault,
+      amount * Math.pow(10, mintInfo.decimals),
     );
-    const poolAct = await this.program.account.poolState.fetch(pool);
 
-    await sendAndConfirmTransaction(this.connection, sendTokensToFinance, [
-      vault,
-    ]);
-
-    return { pool, stakeEntry: userEntry, poolBalance: poolAct.totalStakedSol };
+    return true;
   }
 
   async unstake({ pubkey }: { pubkey: string }) {
@@ -368,50 +470,23 @@ export class SolanaService {
     const destinationAccount = new PublicKey(pubkey);
     const mintKey = new PublicKey(mint);
 
-    const associatedTokenAccount = await getAssociatedTokenAddress(
+    const mintInfo = await getMint(this.connection, mintKey);
+    const associatedTokenAccount = await getOrCreateAssociatedTokenAccount(
+      this.connection,
+      this.programAuthority,
       mintKey,
       destinationAccount,
     );
-    const source = await getAssociatedTokenAddress(
-      mintKey,
-      this.programAuthority.publicKey,
-    );
-    const accountInfo = await this.connection.getAccountInfo(
-      associatedTokenAccount,
-    );
-    console.log({ accountInfo });
-    const blockhash = (await this.connection.getLatestBlockhash('finalized'))
-      .blockhash;
-    console.log({ accountInfo });
-    if (accountInfo === null) {
-      const tx = new Transaction().add(
-        createAssociatedTokenAccountInstruction(
-          destinationAccount,
-          associatedTokenAccount,
-          this.programAuthority.publicKey,
-          mintKey,
-        ),
-      );
-      tx.feePayer = destinationAccount;
-      tx.recentBlockhash = blockhash;
-      const signedTx = await this.provider.wallet.signTransaction(tx);
-      await signedTx.partialSign(this.programAuthority);
-      const serializedTx = signedTx.serialize({ requireAllSignatures: false });
-      return serializedTx.toString('base64');
-    }
-    const tx = new Transaction().add(
-      createTransferInstruction(
-        source,
-        associatedTokenAccount,
-        this.programAuthority.publicKey,
-        1 * LAMPORTS_PER_SOL,
-        [this.programAuthority],
-      ),
-    );
-    const test = await this.connection.sendTransaction(tx, [
+    console.log({ associatedTokenAccount });
+    await mintTo(
+      this.connection,
       this.programAuthority,
-    ]);
-    console.log({ test });
+      mintKey,
+      associatedTokenAccount.address,
+      this.programAuthority.publicKey,
+      100 * Math.pow(10, mintInfo.decimals),
+    );
+
     return 'ok';
     // tx.feePayer = destinationAccount;
     // tx.recentBlockhash = blockhash;

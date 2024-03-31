@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { PoolService } from 'src/pool/pool.service';
 import { PrizeService } from 'src/prize/prize.service';
 import { SolanaService } from 'src/solana/solana.service';
@@ -78,15 +77,26 @@ export class UsersService {
   }
 
   async stake(stake: IStake) {
-    const { stakeEntry, poolBalance } = await this.solanaService.stake(stake);
+    const pool = await this.poolService.findPoolById(stake.pool);
+    const { stakeEntry, poolBalance, decimals } =
+      await this.solanaService.stake({
+        ...stake,
+        tokenMint: pool.tokenMint,
+      });
 
     const dbEntry = await this.userStakeRepository.findOne({
-      where: { publicKey: stakeEntry.toBase58() },
-      relations: ['pool'],
+      where: {
+        pool: {
+          id: pool.id,
+        },
+        user: {
+          publicKey: stake.pubkey,
+        },
+      },
     });
 
     await this.userTransactionsRepository.save({
-      amount: BigInt(stake.amount * LAMPORTS_PER_SOL),
+      amount: BigInt(stake.amount * decimals),
       stakeEntry: dbEntry,
       transferedAt: new Date(),
       from: stake.pubkey,
@@ -94,9 +104,7 @@ export class UsersService {
     } as DeepPartial<UserTransactions>);
 
     await this.historyStakeRepository.save({
-      balance: BigInt(
-        Number(dbEntry.balance) + stake.amount * LAMPORTS_PER_SOL,
-      ),
+      balance: BigInt(Number(stakeEntry.amount)),
       stakeEntry: dbEntry,
     } as DeepPartial<HistoryUserStake>);
 
@@ -105,11 +113,12 @@ export class UsersService {
       BigInt(Number(poolBalance)),
     );
 
-    return this.userStakeRepository.update(dbEntry.id, {
-      balance: BigInt(
-        Number(dbEntry.balance) + stake.amount * LAMPORTS_PER_SOL,
-      ),
+    await this.userStakeRepository.update(dbEntry.id, {
+      balance: BigInt(Number(stakeEntry.amount)),
     });
+
+    //TODO: store fees
+    return true;
   }
 
   async unstake(unstake: { pubkey: string }) {

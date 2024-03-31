@@ -16,3 +16,6 @@ USE YOUR OWN KEYS HERE:
 
 Token Mint: 2YH5NyDZmZ1nqz7TKXPc4fwXLZQSkwxLrb9ZvMPhekRJ
 Token Fake: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+backend:dev: AoYcRun4YnHnngvaNJp4FdxhbKgj2669HH3gu65sNwCc //external vault
+backend:dev: 5x2Ccnmbvm7VszRkVqxDPCTZR5RXh8yPErGVzs4DkEcA //saver network finance
+❯ solana logs | grep "8L6PYBgDY1XC64VN6qeDrJtVp6titb2eE6Biaxkinooy invoke" -A 10

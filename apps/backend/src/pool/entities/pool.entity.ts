@@ -38,6 +38,9 @@ export class Pool {
   @Column({ default: 0, type: 'float' })
   supplyApy: number;
 
+  @Column({ default: 0 })
+  decimals: number;
+
   @OneToMany(() => UserStake, (userStake) => userStake.pool)
   userStakeEntries: UserStake[];
 

@@ -32,12 +32,9 @@ pub struct TokenPoolState {
     pub authority: Pubkey,
     pub bump: u8,
     pub amount: u64,
-    pub token_vault: Pubkey,
+    pub external_vault_destination: Pubkey,
     pub token_mint: Pubkey,
     pub initialized_at: i64,
-    pub vault_bump: u8,
-    pub vault_auth_bump: u8,
-    pub vault_authority: Pubkey,
     pub distribution_rate: u128,
     pub user_deposit_amt: u64
 }

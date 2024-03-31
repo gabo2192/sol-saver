@@ -34,79 +34,7 @@
       "args": []
     },
     {
-      "name": "initPoolToken",
-      "accounts": [
-        {
-          "name": "poolState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenVault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "programAuthority",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "vaultAuthority",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "initStakeEntry",
-      "accounts": [
-        {
-          "name": "user",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "userStakeEntry",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "poolState",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "initTokenStakeEntry",
       "accounts": [
         {
           "name": "user",
@@ -140,7 +68,7 @@
           "isSigner": false
         },
         {
-          "name": "externalSolDestination",
+          "name": "externalVaultDestination",
           "isMut": true,
           "isSigner": false
         },
@@ -197,6 +125,119 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "initPoolToken",
+      "accounts": [
+        {
+          "name": "poolState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "externalVaultDestination",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "programAuthority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initTokenStakeEntry",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userStakeEntry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "poolState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "stakeToken",
+      "accounts": [
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "externalVaultDestination",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userStakeEntry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "stakeAmount",
+          "type": "u64"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -254,7 +295,7 @@
             "type": "u64"
           },
           {
-            "name": "tokenVault",
+            "name": "externalVaultDestination",
             "type": "publicKey"
           },
           {
@@ -264,18 +305,6 @@
           {
             "name": "initializedAt",
             "type": "i64"
-          },
-          {
-            "name": "vaultBump",
-            "type": "u8"
-          },
-          {
-            "name": "vaultAuthBump",
-            "type": "u8"
-          },
-          {
-            "name": "vaultAuthority",
-            "type": "publicKey"
           },
           {
             "name": "distributionRate",
@@ -338,8 +367,5 @@
       "name": "InsufficientFunds",
       "msg": "Insufficient funds"
     }
-  ],
-  "metadata": {
-    "address": "8L6PYBgDY1XC64VN6qeDrJtVp6titb2eE6Biaxkinooy"
-  }
+  ]
 }
