@@ -81,9 +81,9 @@ export class UsersController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @Get('test')
-  async test() {
-    await this.usersQueue.add('test', { foo: 'bar' });
-    return true;
+  @Get('/user-points')
+  async getUsersByPoints() {
+    const userByPoints = await this.userService.getUsersByPoints();
+    return userByPoints;
   }
 }

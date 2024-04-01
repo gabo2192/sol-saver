@@ -42,7 +42,8 @@ export default function RemoveTokensDialog({ isOpen, onClose, pool }: Props) {
           <p>
             You are about to withdraw {(stake?.balance || 0) / LAMPORTS_PER_SOL}{" "}
             {pool.tokenSymbol} from {pool.tokenName} pool. THIS ACTION IS NOT
-            REVERSIBLE. We charge 20000 lamports for the network fee.
+            REVERSIBLE. We charge {20000 / LAMPORTS_PER_SOL} sol for the network
+            fee.
           </p>
         </div>
         <DialogFooter className="sm:justify-start">

@@ -420,17 +420,37 @@ export class SolanaService {
     return { withdraw, poolBalance: poolAct.totalStakedSol };
   }
 
-  async calculatePoolReward(pool: string, apy: number) {
+  async calculatePoolReward(pool: string, apy: number, tokenMint?: string) {
     const poolPublicKey = new PublicKey(pool);
-    const poolAct = await this.program.account.poolState.fetch(poolPublicKey);
-    const poolReward = Math.floor(
-      poolAct.totalStakedSol.toNumber() * (apy / 365),
+
+    if (!tokenMint) {
+      const poolAct = await this.program.account.poolState.fetch(poolPublicKey);
+      const poolReward = Math.floor(
+        poolAct.totalStakedSol.toNumber() * (apy / 365),
+      );
+
+      await this.connection.requestAirdrop(
+        this.saverNetworkFinance.publicKey,
+        poolReward,
+      );
+      return poolReward;
+    }
+
+    const mintKey = new PublicKey(tokenMint);
+    const financeAccount = await getAssociatedTokenAddress(
+      mintKey,
+      this.saverNetworkFinance.publicKey,
     );
-    const saverNetworkFinance = Keypair.fromSecretKey(
-      new Uint8Array(JSON.parse(process.env.SAVER_NETWORK_FINANCE)),
-    );
-    await this.connection.requestAirdrop(
-      saverNetworkFinance.publicKey,
+    const poolAct =
+      await this.program.account.tokenPoolState.fetch(poolPublicKey);
+
+    const poolReward = Math.floor(poolAct.amount.toNumber() * (apy / 365));
+    await mintTo(
+      this.connection,
+      this.programAuthority,
+      mintKey,
+      financeAccount,
+      this.programAuthority.publicKey,
       poolReward,
     );
     return poolReward;

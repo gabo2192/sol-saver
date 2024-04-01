@@ -40,10 +40,11 @@ export default function PrizeTable({ prizes: dbPrizes }: Props) {
       <TableCaption>A list of recent prizes.</TableCaption>
       <TableHeader>
         <TableRow>
-          <TableHead>Claim</TableHead>
           <TableHead>Amount</TableHead>
           <TableHead>USD</TableHead>
           <TableHead>User PK</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Type</TableHead>
           <TableHead>Created At</TableHead>
         </TableRow>
       </TableHeader>
@@ -56,8 +57,14 @@ export default function PrizeTable({ prizes: dbPrizes }: Props) {
           }).format(usd!);
           return (
             <TableRow key={prize.id}>
+              <TableCell>{prize.amount / LAMPORTS_PER_SOL} SOL</TableCell>
+              <TableCell>~{formattedCurrency}</TableCell>
+              <TableCell>{prize.user.publicKey}</TableCell>
+              <TableCell>{prize.isClaimed ? "Claimed" : "Pending"}</TableCell>
+              <TableCell className="uppercase">{prize.type}</TableCell>
+              <TableCell>{prize.createdAt}</TableCell>
               <TableCell className="font-medium">
-                {user?.publicKey === prize.user.publicKey ? (
+                {user?.publicKey === prize.user.publicKey && (
                   <Button
                     variant="default"
                     disabled={
@@ -68,15 +75,8 @@ export default function PrizeTable({ prizes: dbPrizes }: Props) {
                   >
                     Claim
                   </Button>
-                ) : (
-                  prize.id
                 )}
               </TableCell>
-              <TableCell>{prize.amount / LAMPORTS_PER_SOL} SOL</TableCell>
-              <TableCell>~{formattedCurrency}</TableCell>
-              <TableCell>{prize.user.publicKey}</TableCell>
-              <TableCell>{prize.isClaimed ? "Claimed" : "Pending"}</TableCell>
-              <TableCell>{prize.createdAt}</TableCell>
             </TableRow>
           );
         })}

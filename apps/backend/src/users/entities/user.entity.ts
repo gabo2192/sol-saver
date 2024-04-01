@@ -1,4 +1,5 @@
 import { Prize } from 'src/prize/entities/prize.entity';
+import { Ranking } from 'src/ranking/entities/ranking.entity';
 import {
   Column,
   CreateDateColumn,
@@ -22,6 +23,9 @@ export class User {
 
   @OneToMany(() => Prize, (prize) => prize.user)
   prizes: Prize[];
+
+  @OneToMany(() => Ranking, (ranking) => ranking.user)
+  rankings: Ranking[];
 
   @CreateDateColumn()
   createdAt: Date;

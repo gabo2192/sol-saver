@@ -10,7 +10,7 @@ import ProfileDropdown from "./profile-dropdown";
 
 const navigation = [
   { name: "Stake", href: "/" },
-  { name: "Prizes", href: "/prizes" },
+  { name: "Leaderboard", href: "/leaderboard" },
   // { name: "Marketplace", href: "#" },
   { name: "Company", href: "/company" },
 ];

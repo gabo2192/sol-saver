@@ -6,8 +6,10 @@ import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { PoolModule } from './pool/pool.module';
 import { PrizeModule } from './prize/prize.module';
+import { SeasonModule } from './season/season.module';
 import { SolanaModule } from './solana/solana.module';
 import { UsersModule } from './users/users.module';
+import { RankingModule } from './ranking/ranking.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { UsersModule } from './users/users.module';
     SolanaModule,
     PoolModule,
     PrizeModule,
+    SeasonModule,
+    RankingModule,
   ],
 })
 export class AppModule {}

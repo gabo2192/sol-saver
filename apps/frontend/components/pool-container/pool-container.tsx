@@ -144,7 +144,8 @@ export default function PoolContainer({ pool }: Props) {
               Total Supply
             </p>
             <p className="text-xl text-foreground font-semibold">
-              {pool.supply / Math.pow(10, pool.decimals)} {pool.tokenSymbol}
+              {Math.ceil(pool.supply / Math.pow(10, pool.decimals))}{" "}
+              {pool.tokenSymbol}
             </p>
           </div>
           <div className="flex flex-col">

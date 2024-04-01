@@ -1,3 +1,4 @@
+import { PendingPrize } from 'src/prize/entities/pending-prize.entity';
 import { UserStake } from 'src/users/entities/user-stake.entity';
 import {
   Column,
@@ -46,6 +47,9 @@ export class Pool {
 
   @OneToMany(() => Prize, (prize) => prize.pool)
   prizes: Prize[];
+
+  @OneToMany(() => PendingPrize, (pendingRewards) => pendingRewards.pool)
+  pendingRewards: PendingPrize[];
 
   @CreateDateColumn()
   createdAt: Date;

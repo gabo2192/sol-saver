@@ -20,6 +20,12 @@ export class Prize {
   @ManyToOne(() => User, (user) => user.prizes)
   user: User;
 
+  @Column({
+    type: 'enum',
+    enum: ['daily', 'weekly', 'monthly', 'season', 'fee'],
+  })
+  type: 'daily' | 'weekly' | 'monthly' | 'season' | 'fee';
+
   @Column({ type: 'bigint' })
   amount: bigint;
 

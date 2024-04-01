@@ -40,6 +40,7 @@ export class UsersService {
       relations: ['stakeEntries', 'stakeEntries.pool'],
     });
   }
+
   async initStakeEntry(stakeEntry: InitStakeEntryDto & { pubkey: string }) {
     const pooldb = await this.poolService.findPoolByPubkey(
       stakeEntry.poolAddress,
@@ -176,5 +177,53 @@ export class UsersService {
 
   async airdrop(pubkey: string, mint: string) {
     return this.solanaService.airdrop({ pubkey, mint });
+  }
+
+  async getUsersWithBalance() {
+    const usersWithBalance = await this.userStakeRepository
+      .createQueryBuilder('stake')
+      .innerJoin('stake.user', 'user')
+      .innerJoin('stake.pool', 'pool')
+      .select('user.id')
+      .addSelect('pool.id')
+      .addSelect('stake.balance')
+      .where('stake.balance > 0')
+      .getMany();
+
+    const users = usersWithBalance.map((user) => ({
+      id: user.user.id,
+      balance: user.balance,
+      pool: user.pool.id,
+    }));
+    return users;
+  }
+
+  async getStakeEntriesByPoolId(poolId: number) {
+    const usersWithBalance = await this.userStakeRepository
+      .createQueryBuilder('stake')
+      .innerJoin('stake.user', 'user')
+      .innerJoin('stake.pool', 'pool')
+      .select('user.id')
+      .addSelect('stake.balance')
+      .where('stake.balance > 0')
+      .andWhere('pool.id = :poolId', { poolId })
+      .getMany();
+
+    const users = usersWithBalance.map((user) => ({
+      id: user.user.id,
+      balance: user.balance,
+    }));
+    return users;
+  }
+
+  async getUsersByPoints() {
+    const users = await this.userRepository.find({ relations: ['rankings'] });
+    const mappedUsers = users.map((user) => {
+      return {
+        publicKey: user.publicKey,
+        points: user.rankings.reduce((acc, ranking) => acc + ranking.points, 0),
+      };
+    });
+    return mappedUsers.sort((a, b) => b.points - a.points);
   }
 }

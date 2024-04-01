@@ -17,8 +17,22 @@ export class AdminController {
     return await this.adminService.createTokenMint();
   }
 
-  @Post('raffle-reward')
-  async raffleReward(@Body() { poolId, apy }: { poolId: number; apy: number }) {
-    return await this.adminService.raffleReward(poolId, apy);
+  @Post('create-reward')
+  async createReward(@Body() { poolId, apy }: { poolId: number; apy: number }) {
+    return await this.adminService.createReward(poolId, apy);
+  }
+
+  @Post('/start-season')
+  async startSeason() {
+    return await this.adminService.startSeason();
+  }
+  @Post('/start-season-points')
+  async startSeasonPointSystem() {
+    return await this.adminService.startSeasonPointSystem();
+  }
+
+  @Post('/start-day')
+  async startDay() {
+    return await this.adminService.incrementDay();
   }
 }
