@@ -15,7 +15,7 @@ import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { Pool } from "@types";
 import axios from "axios";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { useState } from "react";
 import { ButtonLink } from "../atoms/button-link";
 import AddTokensDialog from "../dialog/add-tokens";
@@ -28,6 +28,9 @@ export default function PoolContainer({ pool }: Props) {
   const [isOpen, setIsOpen] = useState<"stake" | "withdraw" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const pathname = usePathname();
+  const params = useParams();
+
+  const locale = params.locale as string;
 
   const { user } = useUserContext();
   const userStake = user?.stakeEntries?.find(
@@ -127,7 +130,7 @@ export default function PoolContainer({ pool }: Props) {
               {pool.tokenSymbol}
             </h3>
           </div>
-          {pathname === "/" && (
+          {pathname === "/" + locale && (
             <Link
               className="ml-auto underline  text-primary px-4 text-xl font-medium rounded-md flex items-center"
               href={`/pool/${pool.id}`}

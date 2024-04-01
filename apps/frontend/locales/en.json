@@ -1,0 +1,13 @@
+{
+  "home": {
+    "title": "Stake to win Prizes",
+    "description": "Stake your tokens to win prizes",
+    "totalSupply": "Total Supply",
+    "viewPool": "View Pool",
+    "myPool": "My {token} Deposited",
+    "deposited": "Deposited",
+    "chances": "Chances",
+    "deposit": "Deposit",
+    "viewPrizes": "View prizes"
+  }
+}
