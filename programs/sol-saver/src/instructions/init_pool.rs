@@ -15,7 +15,6 @@ pub struct InitializePool<'info> {
     /// CHECK:
     #[account(mut)]
     pub external_vault_destination: AccountInfo<'info>,
-
     #[account(
         mut,
         constraint = program_authority.key() == PROGRAM_AUTHORITY
@@ -32,12 +31,18 @@ pub fn init_pool_handler(ctx: Context<InitializePool>) -> Result<()>{
     let pool_state= &mut ctx.accounts.pool_state;
 
     pool_state.bump = ctx.bumps.pool_state;
-    pool_state.total_staked_sol = 0;
-    pool_state.user_deposit_amt = 0;
-    pool_state.initialized_at = Clock::get().unwrap().unix_timestamp;
-    pool_state.last_reward_timestamp = 0;
-    pool_state.external_vault_destination = ctx.accounts.external_vault_destination.key();
     pool_state.authority = ctx.accounts.program_authority.key();
+    pool_state.external_vault_destination = ctx.accounts.external_vault_destination.key();
+    pool_state.users = vec![];
+    pool_state.waiting_users = vec![];
+    pool_state.winners = vec![];
+    pool_state.init_ts = ctx.accounts.clock.unix_timestamp;
+    pool_state.round = 1;
+    pool_state.week = 1;
+    pool_state.month = 1;
+    pool_state.season = 1;
+    pool_state.amount = 0;
+    pool_state.min_deposit_amount = 1000;
     
     Ok(())
 }

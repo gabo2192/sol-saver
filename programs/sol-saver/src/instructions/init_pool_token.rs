@@ -6,12 +6,12 @@ use {
 pub struct InitializeTokenPool<'info> {
     #[account(
         init,
-        seeds = [external_vault_destination.key().as_ref(), token_mint.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
+        seeds = [external_vault_destination.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
         bump,
         payer = program_authority,
-        space = 8 + TOKEN_STAKE_POOL_SIZE
+        space = 8 + STAKE_POOL_SIZE
     )]
-    pub pool_state: Account<'info, TokenPoolState>,
+    pub pool_state: Account<'info, PoolState>,
     /// CHECK:
     #[account(mut)]
     pub external_vault_destination: Account<'info, TokenAccount>,
@@ -32,14 +32,21 @@ pub struct InitializeTokenPool<'info> {
 pub fn init_pool_token_handler(ctx: Context<InitializeTokenPool>) -> Result<()>{
     // initialize pool state
     let pool_state = &mut ctx.accounts.pool_state;
-    pool_state.authority = ctx.accounts.program_authority.key();
+    
     pool_state.bump = ctx.bumps.pool_state;
-    pool_state.amount = 0;
-    pool_state.user_deposit_amt = 0;
+    pool_state.authority = ctx.accounts.program_authority.key();
     pool_state.external_vault_destination = ctx.accounts.external_vault_destination.key();
     pool_state.token_mint = ctx.accounts.token_mint.key();
-    pool_state.initialized_at = Clock::get().unwrap().unix_timestamp;
-
+    pool_state.users = vec![];
+    pool_state.waiting_users = vec![];
+    pool_state.winners = vec![];
+    pool_state.init_ts = ctx.accounts.clock.unix_timestamp;
+    pool_state.round = 0;
+    pool_state.week = 0;
+    pool_state.month = 0;
+    pool_state.season = 0;
+    pool_state.amount = 0;
+    pool_state.min_deposit_amount = 1000;
 
     Ok(())
 }
