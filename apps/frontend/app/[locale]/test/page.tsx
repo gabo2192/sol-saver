@@ -15,7 +15,6 @@ import {
 import {
   ComputeBudgetProgram,
   PublicKey,
-  SystemProgram,
   Transaction,
   TransactionMessage,
   VersionedTransaction,
@@ -49,7 +48,7 @@ export default function Test() {
   const wallet = useWallet();
   const [oracleInfo, setOracleInfo] = useState<OracleInfo | null>(null);
   const router = useRouter();
-
+  console.log(wallet.publicKey?.toBase58());
   useEffect(() => {
     if (program) {
       const fetchOracleInfo = async () => {
@@ -141,7 +140,7 @@ export default function Test() {
       const tx = new Transaction();
       const { blockhash } = await connection.getLatestBlockhash();
       const ix = await program.methods
-        .updatePriority(1, -1)
+        .updatePriority(-1, 1)
         .accountsPartial({
           oracleInfo: oracleAddress,
         })
@@ -322,7 +321,7 @@ async function updateSwitchboardPrice(
 
   const pullFeed = new PullFeed(
     switchboard,
-    new PublicKey("C393Ta1B6Cmg52SSd5ixHu6pADLnX6ToQxfrHPry9Md9")
+    new PublicKey("CSB4EsgkfooqFfBb8f1SDHh7np358iP7JEWjRYTPwH3C")
   );
 
   const [pullIx, responses, success] = await pullFeed.fetchUpdateIx({
@@ -338,7 +337,9 @@ async function updateSwitchboardPrice(
     .getPrice()
     .accounts({
       switchboardFeedInfo: oracleInfo.oracleSwitchboard,
-      pythPriceInfo: SystemProgram.programId,
+      pythPriceInfo: new PublicKey(
+        "FsYmX7mGqmGk4SHq7CaDcwiQtkagMzQQfry9LsmHPGeE"
+      ),
     })
     .accountsPartial({
       oracleInfo: oracleAddress,
