@@ -1,9 +1,12 @@
 use {
     crate::{errors::*, state::*, utils::*}, 
-    anchor_lang::{prelude::*, system_program::{transfer, Transfer}}, 
+    anchor_lang::prelude::*, 
+    anchor_spl::token::{TokenAccount, Token, Transfer, transfer},
 };
+
+
 #[derive(Accounts)]
-pub struct UnstakeCtx<'info>{
+pub struct UnstakeTokenCtx<'info>{
     #[account(
         mut,
         seeds = [external_vault_destination.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
@@ -17,17 +20,24 @@ pub struct UnstakeCtx<'info>{
     #[account(
         mut
     )]
-    pub user: Signer<'info>,
+    pub user: AccountInfo<'info>,
     #[account(
         mut, 
         seeds = [user.key().as_ref(), STAKE_ENTRY_SEED.as_bytes()],
         bump = user_stake_entry.bump
     )]
     pub user_stake_entry: Account<'info, StakeEntry>,
+    #[account(
+        mut,
+        constraint = user_token_account.mint == pool.token_mint
+        @ StakeError::InvalidMint
+    )]
+    pub user_token_account: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>
 }
 
-pub fn unstake_handler(ctx: Context<UnstakeCtx>) -> Result<()>{
+pub fn unstake_token_handler(ctx: Context<UnstakeTokenCtx>) -> Result<()>{
     let out_amount = ctx.accounts.user_stake_entry.balance;
     let fee_amount = 2000;
     let pool = &mut ctx.accounts.pool;
@@ -64,14 +74,16 @@ pub fn unstake_handler(ctx: Context<UnstakeCtx>) -> Result<()>{
 }   
 
 
-impl<'info> UnstakeCtx <'info> {
+
+impl<'info> UnstakeTokenCtx <'info> {
     pub fn transfer_ctx(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
-        let cpi_program = self.system_program.to_account_info();
+        let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = Transfer {
             from: self.external_vault_destination.to_account_info(),
-            to: self.user.to_account_info(),
+            to: self.user_token_account.to_account_info(),
+            authority: self.user.to_account_info()
         };
-
         CpiContext::new(cpi_program, cpi_accounts)
     }
 }
+

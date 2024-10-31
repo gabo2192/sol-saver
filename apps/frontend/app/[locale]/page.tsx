@@ -1,10 +1,8 @@
-import { PoolContainer } from "@components/pool-container";
-import backendClient from "@lib/backend-client";
-import { Pool } from "@types";
+import Test from "@components/test";
 import { getTranslations } from "next-intl/server";
 
 export default async function Page() {
-  const { data: pools } = await backendClient.get<Pool[]>("/pool");
+  // const { data: pools } = await backendClient.get<Pool[]>("/pool");
   const solanaPrice = 180;
   const t = await getTranslations("home");
 
@@ -16,11 +14,12 @@ export default async function Page() {
       <p className="font-medium text-foreground text-center text-md">
         {t("description")}
       </p>
-      {pools
+      <Test />
+      {/* {pools
         .sort((a, b) => a.id - b.id)
         .map((pool) => (
           <PoolContainer pool={pool} key={pool.id} />
-        ))}
+        ))} */}
     </>
   );
 }

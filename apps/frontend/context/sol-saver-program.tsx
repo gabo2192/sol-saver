@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { IDL, SolSaver } from "../types/sol_saver";
+import IDL from "../idl/oracle_priority.json";
+import { OraclePriority } from "../types/oracle_priority";
 
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 
 interface SolSaverContext {
-  program: anchor.Program<SolSaver> | null;
+  program: anchor.Program<OraclePriority> | null;
 }
 
 // Create a new context
@@ -15,7 +16,9 @@ const SolSaverContext = createContext<SolSaverContext>({
 
 // Create a provider component
 const SolSaverProvider = ({ children }: { children: React.ReactNode }) => {
-  const [program, setProgram] = useState<anchor.Program<SolSaver> | null>(null);
+  const [program, setProgram] = useState<anchor.Program<OraclePriority> | null>(
+    null
+  );
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
 
@@ -32,9 +35,8 @@ const SolSaverProvider = ({ children }: { children: React.ReactNode }) => {
         wallet,
         { preflightCommitment: "confirmed" }
       );
-      const _program = new anchor.Program<SolSaver>(
-        JSON.parse(JSON.stringify(IDL)),
-        process.env.NEXT_PUBLIC_PROGRAM_PUBKEY as string,
+      const _program = new anchor.Program<OraclePriority>(
+        IDL as any,
         anchorProvider
       );
       setProgram(_program);

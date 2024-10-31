@@ -30,6 +30,5 @@ pub fn init_token_stake_entry_handler(ctx: Context<InitTokenEntryCtx>) -> Result
     user_entry.user = ctx.accounts.user.key();
     user_entry.bump = ctx.bumps.user_stake_entry;
     user_entry.balance = 0;
-    user_entry.initial_distribution_rate = 0;
     Ok(())
 }

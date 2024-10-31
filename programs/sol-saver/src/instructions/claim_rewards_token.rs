@@ -3,51 +3,42 @@ use {
     anchor_lang::{prelude::*, system_program::{transfer, Transfer}}, 
 };
 #[derive(Accounts)]
-pub struct UnstakeCtx<'info>{
+pub struct ClaimRewardsTokenCtx<'info>{
     #[account(
         mut,
         seeds = [external_vault_destination.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
         bump = pool.bump
     )]
     pub pool: Account<'info, PoolState>,
-    /// CHECK:
-    #[account(mut)]  // Ensure mutability for transfer
-    pub external_vault_destination: Signer<'info>,  // Added for SOL transfer
-    /// CHECK:
-    #[account(
-        mut
-    )]
+    #[account(mut)] 
+    pub external_vault_destination: Signer<'info>,    
+    #[account(mut)]
     pub user: Signer<'info>,
     #[account(
-        mut, 
-        seeds = [user.key().as_ref(), STAKE_ENTRY_SEED.as_bytes()],
-        bump = user_stake_entry.bump
+        mut,
+        constraint = program_authority.key() == PROGRAM_AUTHORITY
+        @ StakeError::InvalidProgramAuthority
     )]
-    pub user_stake_entry: Account<'info, StakeEntry>,
+    pub program_authority: Signer<'info>,
     pub system_program: Program<'info, System>
 }
 
-pub fn unstake_handler(ctx: Context<UnstakeCtx>) -> Result<()>{
-    let out_amount = ctx.accounts.user_stake_entry.balance;
-    let fee_amount = 2000;
+pub fn claim_rewards_token_handler(ctx: Context<ClaimCtx>) -> Result<()>{
     let pool = &mut ctx.accounts.pool;
-    if out_amount < fee_amount {
-        return Err(StakeError::InsufficientFunds.into());
-    }
     let mut prize = 0;
     // check if user is winner of any prize
-    // for raffle_type in [0,1,2] {
-    //     if let Some((_, prize_amount, claimed)) = get_winner(&pool.prize_winners, raffle_type.clone(), ctx.accounts.user.key()) {
-    //         if !claimed {
-    //             prize += prize_amount;
-    //             update_claim_status(&mut pool.prize_winners, raffle_type.clone(), ctx.accounts.user.key());
-    //         } 
-    //     }
-    // }
+    for raffle_type in [RaffleEnum::Weekly, RaffleEnum::Monthly, RaffleEnum::Season] {
+        if let Some((_, prize_amount, claimed)) = get_winner(&pool.prize_winners, raffle_type.clone(), ctx.accounts.user.key()) {
+            if !claimed {
+                prize += prize_amount;
+                update_claim_status(&mut pool.prize_winners, raffle_type.clone(), ctx.accounts.user.key());
+            } 
+        }
+    }
 
-    msg!("Out amount returned: {}", out_amount);
+    msg!("Out amount returned: {}", prize);
     msg!("Total staked before withdrawal: {}", ctx.accounts.pool.amount);
-    let transfer_amount = prize + out_amount - fee_amount;
+    let transfer_amount = prize;
 
     transfer(ctx.accounts.transfer_ctx(), transfer_amount)?;
 
@@ -64,14 +55,15 @@ pub fn unstake_handler(ctx: Context<UnstakeCtx>) -> Result<()>{
 }   
 
 
-impl<'info> UnstakeCtx <'info> {
+impl<'info> ClaimRewardsTokenCtx <'info> {
     pub fn transfer_ctx(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
-        let cpi_program = self.system_program.to_account_info();
+        let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = Transfer {
             from: self.external_vault_destination.to_account_info(),
-            to: self.user.to_account_info(),
+            to: self.user_token_account.to_account_info(),
+            authority: self.user.to_account_info()
         };
-
         CpiContext::new(cpi_program, cpi_accounts)
     }
 }
+

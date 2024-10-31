@@ -1,6 +1,7 @@
 {
   "extends": "@repo/typescript-config/nextjs.json",
   "compilerOptions": {
+    "moduleResolution": "node",
     "plugins": [
       {
         "name": "next"
@@ -21,7 +22,9 @@
     "next-env.d.ts",
     "next.config.js",
     "**/*.js",
-    "**/*.ts",
+    "**/*.tsx",
+    "!app/test/layout.tsx",
+    "!app/test/page.tsx",
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],

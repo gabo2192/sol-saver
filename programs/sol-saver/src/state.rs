@@ -15,6 +15,7 @@ pub const STAKE_POOL_SIZE: usize = 8 + std::mem::size_of::<PoolState>();
 pub const STAKE_ENTRY_SIZE: usize = 8 + std::mem::size_of::<StakeEntry>();
 
 #[account]
+
 pub struct PoolState {
     // The bump for the vault pda
     pub bump: u8,
@@ -26,18 +27,34 @@ pub struct PoolState {
     pub token_mint: Pubkey,
     // lifetime total withdrawals
     pub amount: u64,
+     // lifetime total withdrawals
+     pub user_desposit_amount: u64,
     // the min_deposite_amount
     pub min_deposit_amount: u64,
-    // vector of users in the pool and their shares
-    pub users: Vec<(Pubkey, u64)>,
-    // vector of users waiting for the next round
-    pub waiting_users: Vec<(Pubkey, u64)>,
+   pub users: Users,
     // winner
-    pub winners: Vec<(Pubkey, u64)>,
+    // pub prize_winners: PrizeWinners,
     // tiemstamp of when the pool was initialized
     pub init_ts: i64,
+    // round
+    // pub round: Round,
+    // prize
+    // pub prize_pool: PrizePool
+}
+
+#[account]
+#[derive(Default)]
+pub struct Users {
+    // vector of users in the pool and their shares
+    pub users: Vec<Pubkey>,
+    // vector of users waiting for the next round
+    pub waiting_users: Vec<Pubkey>,
+}
+
+#[account]
+pub struct Round {
     // the round number
-    pub round: u64,
+    pub day: u64,
     // week number
     pub week: u64,
     // month number
@@ -46,7 +63,22 @@ pub struct PoolState {
     pub season: u64,
 }
 
+// #[account]
+// pub struct PrizePool {
+//    pub weekly_pool: u64,    // Amount set aside for weekly prizes
+//    pub monthly_pool: u64,   // Amount set aside for monthly prizes
+//    pub season_pool: u64,    // Amount set aside for season prizes
+//    pub protocol_fee: u64,   // Amount collected as the protocol fee
+// }
 
+// #[account]
+// #[derive(Default)]
+// pub struct PrizeWinners{
+//     pub daily: Vec<(Pubkey, u64, bool)>,
+//     pub weekly: Vec<(Pubkey, u64, bool)>,
+//     pub monthly: Vec<(Pubkey, u64, bool)>,
+//     pub season: Vec<(Pubkey, u64, bool)>,
+// }
 
 #[account]
 pub struct StakeEntry {
@@ -55,3 +87,4 @@ pub struct StakeEntry {
     pub balance: u64,
     pub last_staked: i64,
 }
+

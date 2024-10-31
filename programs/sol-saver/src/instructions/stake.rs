@@ -35,24 +35,24 @@ pub fn stake_handler(ctx: Context<StakeCtx>, stake_amount: u64) -> Result<()> {
     // transfer amount from user token acct to vault
     transfer(ctx.accounts.transfer_ctx(), stake_amount)?;
 
-    msg!("Pool initial total: {}", ctx.accounts.pool.total_staked_sol);
-    msg!("Initial user deposits: {}", ctx.accounts.pool.user_deposit_amt);
+    msg!("Pool initial total: {}", ctx.accounts.pool.amount);
+    msg!("Initial user deposits: {}", ctx.accounts.pool.user_desposit_amount);
     msg!("User entry initial balance: {}", ctx.accounts.user_stake_entry.balance);
 
     // update pool state amount
     let pool = &mut ctx.accounts.pool;
     let user_entry = &mut ctx.accounts.user_stake_entry;
-    msg!("Current pool: {:?}", pool);
 
-    pool.total_staked_sol = pool.total_staked_sol.checked_add(stake_amount).unwrap();
-    pool.user_deposit_amt = pool.user_deposit_amt.checked_add(stake_amount).unwrap();
-    msg!("Current pool total: {}", pool.total_staked_sol);
-    msg!("Amount of tokens deposited by users: {}", pool.user_deposit_amt);
+    pool.amount = pool.amount.checked_add(stake_amount).unwrap();
+    pool.user_desposit_amount = pool.user_desposit_amount.checked_add(stake_amount).unwrap();
+    msg!("Current pool total: {}", pool.amount);
+    msg!("Amount of tokens deposited by users: {}", pool.user_desposit_amount);
 
     // update user stake entry
     user_entry.balance = user_entry.balance.checked_add(stake_amount).unwrap();
     msg!("User entry balance: {}", user_entry.balance);
     user_entry.last_staked = Clock::get().unwrap().unix_timestamp;
+    pool.users.waiting_users.push(ctx.accounts.user.key().clone());
 
     Ok(())
 }

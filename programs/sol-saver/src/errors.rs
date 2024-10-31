@@ -9,5 +9,7 @@ pub enum StakeError {
     #[msg("Invalid user provided")]
     InvalidUser,
     #[msg("Insufficient funds") ]
-    InsufficientFunds
+    InsufficientFunds,
+    #[msg("Invalid raffle type")]
+    InvalidRaffleType
 }

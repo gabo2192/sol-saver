@@ -37,15 +37,29 @@ pub fn init_pool_token_handler(ctx: Context<InitializeTokenPool>) -> Result<()>{
     pool_state.authority = ctx.accounts.program_authority.key();
     pool_state.external_vault_destination = ctx.accounts.external_vault_destination.key();
     pool_state.token_mint = ctx.accounts.token_mint.key();
-    pool_state.users = vec![];
-    pool_state.waiting_users = vec![];
-    pool_state.winners = vec![];
-    pool_state.init_ts = ctx.accounts.clock.unix_timestamp;
-    pool_state.round = 0;
-    pool_state.week = 0;
-    pool_state.month = 0;
-    pool_state.season = 0;
-    pool_state.amount = 0;
+    // pool_state.users = vec![];
+    // pool_state.waiting_users = vec![];
+    // pool_state.prize_winners = PrizeWinners{
+    //     daily: vec![],
+    //     weekly: vec![],
+    //     monthly: vec![],
+    //     season: vec![],
+    // };
+    pool_state.init_ts = Clock::get()?.unix_timestamp;
+
+    // round starts at 0 once we start staking season and round starts 
+    // pool_state.round = Round{
+    //     day: 0,
+    //     week: 0,
+    //     month: 0,
+    //     season: 0,
+    // };
+    // pool_state.prize_pool = PrizePool{
+    //     weekly_pool: 0,
+    //     monthly_pool:0,
+    //     protocol_fee: 0,
+    //     season_pool: 0
+    // };
     pool_state.min_deposit_amount = 1000;
 
     Ok(())

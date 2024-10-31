@@ -9,10 +9,10 @@ use {
 pub struct StakeTokenCtx<'info> {
     #[account(
         mut,
-        seeds = [external_vault_destination.key().as_ref(), pool.token_mint.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
+        seeds = [external_vault_destination.key().as_ref(), STAKE_POOL_STATE_SEED.as_bytes()],
         bump = pool.bump
     )]
-    pub pool: Account<'info, TokenPoolState>,
+    pub pool: Account<'info, PoolState>,
     /// CHECK:
     #[account(mut)]
     pub external_vault_destination: AccountInfo<'info>,
@@ -44,7 +44,7 @@ pub fn stake_token_handler(ctx: Context<StakeTokenCtx>, stake_amount: u64) -> Re
     transfer(ctx.accounts.transfer_ctx(), stake_amount)?;
 
     msg!("Pool initial total: {}", ctx.accounts.pool.amount);
-    msg!("Initial user deposits: {}", ctx.accounts.pool.user_deposit_amt);
+    msg!("Initial user deposits: {}", ctx.accounts.pool.user_desposit_amount);
     msg!("User entry initial balance: {}", ctx.accounts.user_stake_entry.balance);
 
     // update pool state amount
@@ -53,14 +53,15 @@ pub fn stake_token_handler(ctx: Context<StakeTokenCtx>, stake_amount: u64) -> Re
   
 
     pool.amount = pool.amount.checked_add(stake_amount).unwrap();
-    pool.user_deposit_amt = pool.user_deposit_amt.checked_add(stake_amount).unwrap();
+    pool.user_desposit_amount = pool.user_desposit_amount.checked_add(stake_amount).unwrap();
     msg!("Current pool total: {}", pool.amount);
-    msg!("Amount of tokens deposited by users: {}", pool.user_deposit_amt);
+    msg!("Amount of tokens deposited by users: {}", pool.user_desposit_amount);
 
     // update user stake entry
     user_entry.balance = user_entry.balance.checked_add(stake_amount).unwrap();
     msg!("User entry balance: {}", user_entry.balance);
     user_entry.last_staked = Clock::get().unwrap().unix_timestamp;
+    // pool.waiting_users.push(ctx.accounts.user.key().clone());
 
     Ok(())
 }
